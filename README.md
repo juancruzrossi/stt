@@ -139,15 +139,6 @@ Check cached model size:
 stt models
 ```
 
-Advanced company-controlled mode:
-
-```bash
-stt listen --offline
-```
-
-`--offline` guarantees STT will fail instead of downloading the model if it is
-missing.
-
 ## Platform Notes
 
 Supported targets:
@@ -252,4 +243,3 @@ For managed company devices:
 - Review the source code.
 - Keep `uv.lock` committed.
 - Download or copy the model in an approved process.
-- Use `stt listen --offline` after the model exists locally.

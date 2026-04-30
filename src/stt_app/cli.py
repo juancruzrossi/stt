@@ -143,7 +143,7 @@ def listen(
     jobs: queue.Queue[tuple[object, float] | None] = queue.Queue()
     stop_event = threading.Event()
 
-    click.echo("Loading local STT model. First run may download about 464 MB...")
+    click.echo("Loading local STT model...")
     try:
         model = load_model(
             DEFAULT_MODEL,
