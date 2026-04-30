@@ -143,7 +143,6 @@ def listen(
     jobs: queue.Queue[tuple[object, float] | None] = queue.Queue()
     stop_event = threading.Event()
 
-    click.echo("Loading local STT model...")
     try:
         model = load_model(
             DEFAULT_MODEL,
@@ -162,15 +161,12 @@ def listen(
     def on_start() -> None:
         if recorder.is_recording:
             return
-        click.echo("Recording...")
         recorder.start()
 
     def on_stop() -> None:
         waveform, duration = recorder.stop()
         if duration < MIN_SECONDS or waveform.size == 0:
-            click.echo("Audio too short; ignored.")
             return
-        click.echo(f"Processing {duration:.1f}s...")
         jobs.put((waveform, duration))
 
     def on_toggle() -> None:
@@ -187,7 +183,7 @@ def listen(
 
             waveform, _duration = item
             try:
-                segments, info = model.transcribe(
+                segments, _info = model.transcribe(
                     waveform,
                     language=normalize_language(language),
                     task=task,
@@ -200,15 +196,9 @@ def listen(
                     segment.text.strip() for segment in segments if segment.text.strip()
                 )
                 if not text:
-                    click.echo("No text detected.")
                     continue
 
                 paste_text(text, restore_clipboard=not keep_clipboard)
-                click.echo(
-                    f"Pasted: {text} "
-                    f"[{getattr(info, 'language', '?')} "
-                    f"{getattr(info, 'language_probability', 0.0):.2f}]"
-                )
             except Exception as exc:  # noqa: BLE001
                 click.echo(f"Transcription error: {exc}", err=True)
 
