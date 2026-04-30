@@ -7,24 +7,38 @@ the cursor is focused. It does not use a paid API.
 
 ## Install
 
-macOS or Linux:
+Recommended install:
 
 ```bash
-git clone <PRIVATE_REPO_URL> stt
+curl -fsSL https://raw.githubusercontent.com/juancruzrossi/stt/main/install.sh | bash
+```
+
+Private repository note: the `curl` command only works from machines that can
+access the raw GitHub file. If that is not available, clone the repository:
+
+```bash
+git clone https://github.com/juancruzrossi/stt.git
 cd stt
-./setup.sh
+./install.sh
 ```
 
 Windows:
 
 ```powershell
-git clone <PRIVATE_REPO_URL> stt
+git clone https://github.com/juancruzrossi/stt.git
 cd stt
-.\setup.ps1
+.\install.ps1
 ```
 
-The setup uses `uv`. Runtime files stay inside the project and are ignored by
-Git:
+The installer:
+
+- Installs `uv` if needed.
+- Installs system audio dependencies when needed.
+- Installs Python dependencies into an isolated `.venv`.
+- Downloads the local STT model.
+- Installs the `stt` command into `~/.local/bin/stt`.
+
+Runtime files stay isolated in the install directory:
 
 ```text
 .venv/
@@ -43,19 +57,13 @@ System Settings > Privacy & Security > Input Monitoring
 
 After changing permissions, quit the terminal app completely and reopen it.
 
-## Dictation
+## Usage
 
 ```bash
-./stt listen
+stt listen
 ```
 
-Windows:
-
-```powershell
-.\stt.cmd listen
-```
-
-Usage on macOS:
+On macOS:
 
 1. Focus a text field.
 2. Double-tap `Command` to start recording.
@@ -73,20 +81,20 @@ By default, language detection is automatic:
 Force a language only when needed:
 
 ```bash
-./stt listen --language es
-./stt listen --language en
+stt listen --language es
+stt listen --language en
 ```
 
 ## Audio Files
 
 ```bash
-./stt transcribe /path/to/audio.mp3
+stt transcribe /path/to/audio.mp3
 ```
 
 Save to a text file:
 
 ```bash
-./stt transcribe /path/to/audio.mp3 --output transcript.txt
+stt transcribe /path/to/audio.mp3 --output transcript.txt
 ```
 
 ## Translation
@@ -94,8 +102,8 @@ Save to a text file:
 Whisper can translate speech to English:
 
 ```bash
-./stt transcribe /path/to/spanish-audio.mp3 --task translate
-./stt listen --task translate
+stt transcribe /path/to/spanish-audio.mp3 --task translate
+stt listen --task translate
 ```
 
 Limitation: Whisper translates to English only. English-to-Spanish translation is
@@ -103,7 +111,7 @@ not implemented and would require an additional local translation model.
 
 ## Model
 
-The first `listen` or `transcribe` command downloads the default model:
+The installer downloads:
 
 ```text
 Systran/faster-whisper-small
@@ -116,7 +124,7 @@ https://huggingface.co/Systran/faster-whisper-small
 It is the CTranslate2 conversion of OpenAI's `whisper-small`, used by Faster
 Whisper for efficient local inference.
 
-The model is cached inside the project:
+The model is cached inside the install directory:
 
 ```text
 .cache/huggingface/hub/models--Systran--faster-whisper-small
@@ -125,16 +133,17 @@ The model is cached inside the project:
 Check cached model size:
 
 ```bash
-./stt models
+stt models
 ```
 
-Offline mode after the first download:
+Advanced company-controlled mode:
 
 ```bash
-./stt listen --offline
+stt listen --offline
 ```
 
-If the model is missing, `--offline` fails instead of downloading anything.
+`--offline` guarantees STT will fail instead of downloading the model if it is
+missing.
 
 ## Platform Notes
 
@@ -152,6 +161,14 @@ validated on the actual company image.
 
 ### macOS
 
+**`stt` command not found.**
+
+Make sure `~/.local/bin` is in your `PATH`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
 **Double-tap Command does nothing.**
 
 Enable Accessibility and Input Monitoring for your terminal app. Then fully
@@ -162,18 +179,12 @@ quit and reopen the terminal.
 Enable Microphone permission for your terminal app. Then quit and reopen the
 terminal.
 
-**The model downloads again after moving the folder.**
-
-That is expected because STT stores models inside the project `.cache/` folder.
-Run `./stt listen` once to download it again, or copy `.cache/huggingface` from
-the approved source machine.
-
 ### Linux
 
 **Global hotkeys do not work.**
 
 Wayland may block global keyboard capture. Try X11, or use file transcription
-with `./stt transcribe`.
+with `stt transcribe`.
 
 **Pasting fails.**
 
@@ -191,29 +202,25 @@ Install PortAudio:
 sudo apt-get install -y portaudio19-dev
 ```
 
-Then rerun:
-
-```bash
-uv sync --python 3.12
-```
+Then rerun the installer.
 
 ### Windows
 
-**The command is not recognized.**
+**`stt` command not found.**
 
-Use:
+Add this directory to `PATH`:
 
-```powershell
-.\stt.cmd listen
+```text
+%USERPROFILE%\.local\bin
 ```
 
-**PowerShell blocks setup.ps1.**
+**PowerShell blocks install.ps1.**
 
 Run:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\setup.ps1
+.\install.ps1
 ```
 
 **Paste does not work in an elevated app.**
@@ -226,11 +233,10 @@ Network access is used for:
 
 - Installing Python dependencies with `uv`.
 - Installing system audio dependencies when needed.
-- Downloading the model from Hugging Face on first use.
+- Downloading the model from Hugging Face during install.
 
-After setup and model download, transcription runs locally. The tool does not
-intentionally upload microphone audio, transcripts, clipboard content, or
-keystrokes.
+After install, transcription runs locally. The tool does not intentionally upload
+microphone audio, transcripts, clipboard content, or keystrokes.
 
 Security-sensitive permissions:
 
@@ -243,4 +249,4 @@ For managed company devices:
 - Review the source code.
 - Keep `uv.lock` committed.
 - Download or copy the model in an approved process.
-- Run with `--offline` after the model exists locally.
+- Use `stt listen --offline` after the model exists locally.

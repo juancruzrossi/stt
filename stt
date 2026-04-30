@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+SOURCE_PATH="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE_PATH" ]]; do
+  SOURCE_DIR="$(cd -P -- "$(dirname -- "$SOURCE_PATH")" && pwd)"
+  LINK_TARGET="$(readlink "$SOURCE_PATH")"
+  if [[ "$LINK_TARGET" == /* ]]; then
+    SOURCE_PATH="$LINK_TARGET"
+  else
+    SOURCE_PATH="$SOURCE_DIR/$LINK_TARGET"
+  fi
+done
+ROOT_DIR="$(cd -P -- "$(dirname -- "$SOURCE_PATH")" && pwd)"
 
 export HF_HOME="${STT_HF_HOME:-$ROOT_DIR/.cache/huggingface}"
 export XDG_CACHE_HOME="${STT_XDG_CACHE_HOME:-$ROOT_DIR/.cache}"
@@ -16,9 +26,9 @@ elif [[ -x "/opt/homebrew/bin/uv" ]]; then
 elif [[ -x "/usr/local/bin/uv" ]]; then
   UV_BIN="/usr/local/bin/uv"
 else
-  echo "uv is not installed. Run: $ROOT_DIR/setup.sh" >&2
+  echo "uv is not installed. Run: $ROOT_DIR/install.sh" >&2
   exit 1
 fi
 
 cd "$ROOT_DIR"
-exec "$UV_BIN" run stt "$@"
+exec "$UV_BIN" run python -m stt_app "$@"
