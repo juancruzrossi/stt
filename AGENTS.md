@@ -29,11 +29,8 @@ uv run --group dev mypy src
 
 ## Versioning
 
-The project currently remains at `0.1.0` while it is being developed privately.
-
-When the project is ready for broader use, update `pyproject.toml` before
-committing changes that affect runtime behavior, CLI UX, install flow,
-dependencies, or public user-facing behavior.
+Update `pyproject.toml` before committing changes that affect runtime behavior,
+CLI UX, install flow, dependencies, or public user-facing behavior.
 
 Use SemVer:
 
