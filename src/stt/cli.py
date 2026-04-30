@@ -141,6 +141,11 @@ def transcribe(
     is_flag=True,
     help="Do not restore the previous clipboard value.",
 )
+@click.option(
+    "--verbose",
+    is_flag=True,
+    help="Print each transcription in the terminal.",
+)
 @common_options
 def listen(
     language: str,
@@ -150,6 +155,7 @@ def listen(
     offline: bool,
     tap_interval: float,
     keep_clipboard: bool,
+    verbose: bool,
 ) -> None:
     """Run global hotkey dictation."""
     from .audio import MicrophoneRecorder, MicrophoneUnavailableError
@@ -222,6 +228,8 @@ def listen(
                     continue
 
                 paste_text(text, restore_clipboard=not keep_clipboard)
+                if verbose:
+                    print_verbose_text(text)
             except Exception as exc:  # noqa: BLE001
                 click.echo(f"Transcription error: {exc}", err=True)
 
@@ -245,6 +253,11 @@ def normalize_language(language: str) -> str | None:
     if value in {"", "auto", "detect", "none"}:
         return None
     return value
+
+
+def print_verbose_text(text: str) -> None:
+    click.echo("----")
+    click.echo(text)
 
 
 def default_trigger_key() -> str:

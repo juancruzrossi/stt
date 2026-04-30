@@ -74,6 +74,18 @@ stt listen --language es
 stt listen --language en
 ```
 
+Print each transcription in the terminal:
+
+```bash
+stt listen --verbose
+```
+
+Verbose output is separated with:
+
+```text
+----
+```
+
 ## Audio Files
 
 ```bash

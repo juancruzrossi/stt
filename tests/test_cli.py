@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import pytest
 from click.testing import CliRunner
 
-from stt.cli import main
+from stt.cli import main, print_verbose_text
 
 
 def test_help_lists_core_commands() -> None:
@@ -26,3 +27,16 @@ def test_listen_rejects_invalid_tap_interval() -> None:
 
     assert result.exit_code != 0
     assert "Invalid value for '--tap-interval'" in result.output
+
+
+def test_listen_help_includes_verbose_option() -> None:
+    result = CliRunner().invoke(main, ["listen", "--help"])
+
+    assert result.exit_code == 0
+    assert "--verbose" in result.output
+
+
+def test_print_verbose_text_separates_entries(capsys: pytest.CaptureFixture[str]) -> None:
+    print_verbose_text("hello")
+
+    assert capsys.readouterr().out == "----\nhello\n"
