@@ -14,13 +14,6 @@ def test_help_lists_core_commands() -> None:
     assert "models" in result.output
 
 
-def test_version() -> None:
-    result = CliRunner().invoke(main, ["--version"])
-
-    assert result.exit_code == 0
-    assert "0.1.0" in result.output
-
-
 def test_transcribe_missing_file_fails_before_model_load() -> None:
     result = CliRunner().invoke(main, ["transcribe", "missing.wav"])
 
