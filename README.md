@@ -34,7 +34,7 @@ The installer:
 
 - Installs `uv` if needed.
 - Installs system audio dependencies when needed.
-- Installs Python dependencies into an isolated `.venv`.
+- Installs locked Python dependencies into an isolated `.venv`.
 - Downloads the local STT model.
 - Installs the `stt` command into `~/.local/bin/stt`.
 

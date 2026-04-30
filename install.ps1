@@ -19,7 +19,7 @@ $env:XDG_CACHE_HOME = if ($env:STT_XDG_CACHE_HOME) { $env:STT_XDG_CACHE_HOME } e
 $env:UV_CACHE_DIR = if ($env:STT_UV_CACHE_DIR) { $env:STT_UV_CACHE_DIR } else { Join-Path $RootDir ".cache\uv" }
 
 Write-Host "Installing Python dependencies with uv..."
-uv sync --python 3.12 --no-dev
+uv sync --locked --python 3.12 --no-dev
 
 Write-Host "Downloading local STT model if needed..."
 uv run --no-dev python -c "from stt_app.transcriber import load_model; load_model('small', device='cpu', compute_type='int8'); print('Model ready: Systran/faster-whisper-small')"
