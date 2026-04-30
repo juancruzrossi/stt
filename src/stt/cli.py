@@ -152,7 +152,7 @@ def listen(
     keep_clipboard: bool,
 ) -> None:
     """Run global hotkey dictation."""
-    from .audio import MicrophoneRecorder
+    from .audio import MicrophoneRecorder, MicrophoneUnavailableError
     from .hotkey import DoubleTapToggleListener
     from .paste import paste_text
     from .transcriber import load_model
@@ -190,10 +190,13 @@ def listen(
         jobs.put((waveform, duration))
 
     def on_toggle() -> None:
-        if recorder.is_recording:
-            on_stop()
-        else:
-            on_start()
+        try:
+            if recorder.is_recording:
+                on_stop()
+            else:
+                on_start()
+        except MicrophoneUnavailableError:
+            click.echo("Microphone unavailable. Try again.", err=True)
 
     def worker() -> None:
         while not stop_event.is_set():

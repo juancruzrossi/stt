@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from contextlib import suppress
 import threading
 import time
 from typing import Any
 
 import numpy as np
 import sounddevice as sd
+
+
+class MicrophoneUnavailableError(RuntimeError):
+    """Raised when the input device cannot be opened or used."""
 
 
 class MicrophoneRecorder:
@@ -27,18 +32,22 @@ class MicrophoneRecorder:
         with self._lock:
             self._chunks = []
         self._started_at = time.monotonic()
-        self._stream = sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=self.channels,
-            dtype="float32",
-            callback=self._callback,
-        )
+        stream: sd.InputStream | None = None
         try:
-            self._stream.start()
-        except Exception:
-            self._stream.close()
-            self._stream = None
-            raise
+            stream = sd.InputStream(
+                samplerate=self.sample_rate,
+                channels=self.channels,
+                dtype="float32",
+                callback=self._callback,
+            )
+            stream.start()
+        except sd.PortAudioError as exc:
+            if stream is not None:
+                with suppress(sd.PortAudioError):
+                    stream.close()
+            raise MicrophoneUnavailableError from exc
+
+        self._stream = stream
 
     def stop(self) -> tuple[np.ndarray, float]:
         if self._stream is None:
@@ -47,8 +56,11 @@ class MicrophoneRecorder:
         self._stream = None
         try:
             stream.stop()
+        except sd.PortAudioError as exc:
+            raise MicrophoneUnavailableError from exc
         finally:
-            stream.close()
+            with suppress(sd.PortAudioError):
+                stream.close()
         duration = time.monotonic() - self._started_at
         with self._lock:
             chunks = self._chunks
