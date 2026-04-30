@@ -79,7 +79,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def add_model_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--model",
+        default=DEFAULT_MODEL,
+        help=argparse.SUPPRESS,
+    )
     parser.add_argument(
         "--language",
         default=DEFAULT_LANGUAGE,

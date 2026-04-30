@@ -71,7 +71,7 @@ Both directories are ignored by Git.
 On first use, preload the default model:
 
 ```bash
-./stt preload --model small
+./stt preload
 ```
 
 This downloads:
@@ -118,13 +118,13 @@ After changing permissions, quit the terminal app completely and reopen it.
 Default mode:
 
 ```bash
-./stt listen --model small
+./stt listen
 ```
 
 Windows:
 
 ```powershell
-.\stt.cmd listen --model small
+.\stt.cmd listen
 ```
 
 Usage:
@@ -141,20 +141,20 @@ Spanish text; English audio is transcribed as English text.
 You can force a language:
 
 ```bash
-./stt listen --model small --language es
-./stt listen --model small --language en
+./stt listen --language es
+./stt listen --language en
 ```
 
 Adjust the double-tap timing if needed:
 
 ```bash
-./stt listen --model small --tap-interval 0.6
+./stt listen --tap-interval 0.6
 ```
 
 ## Hold-to-Record Mode
 
 ```bash
-./stt listen --model small --language es --mode hold --hotkey ctrl+option+cmd
+./stt listen --language es --mode hold --hotkey ctrl+option+cmd
 ```
 
 Hold `Control + Option + Command` to record. Release to transcribe and paste.
@@ -162,13 +162,13 @@ Hold `Control + Option + Command` to record. Release to transcribe and paste.
 ## Transcribe an Audio File
 
 ```bash
-./stt transcribe /path/to/audio.mp3 --model small
+./stt transcribe /path/to/audio.mp3
 ```
 
 Save to a text file:
 
 ```bash
-./stt transcribe /path/to/audio.mp3 --model small --language es --output transcript.txt
+./stt transcribe /path/to/audio.mp3 --language es --output transcript.txt
 ```
 
 ## Translation
@@ -176,13 +176,13 @@ Save to a text file:
 Whisper's built-in translation task translates speech to English:
 
 ```bash
-./stt transcribe /path/to/spanish-audio.mp3 --model small --task translate
+./stt transcribe /path/to/spanish-audio.mp3 --task translate
 ```
 
 For live dictation:
 
 ```bash
-./stt listen --model small --task translate
+./stt listen --task translate
 ```
 
 Important limitation: Whisper translates to English only. It does not translate
@@ -195,7 +195,7 @@ future technical debt and is not implemented in this tool.
 After the model is downloaded, you can force local-only execution:
 
 ```bash
-./stt listen --model small --offline
+./stt listen --offline
 ```
 
 If the model is missing, offline mode fails instead of downloading anything.
@@ -213,7 +213,7 @@ Check environment, permissions guidance, and cached models:
 Test microphone without keyboard shortcuts:
 
 ```bash
-./stt test-mic --seconds 5 --model small --language es
+./stt test-mic --seconds 5
 ```
 
 Test global keyboard capture:
@@ -300,7 +300,7 @@ This project intentionally stores model files under `.cache/huggingface` inside
 the project folder. Run:
 
 ```bash
-./stt preload --model small
+./stt preload
 ```
 
 ### Linux

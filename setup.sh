@@ -84,7 +84,7 @@ Setup complete.
 Try:
   cd "$ROOT_DIR"
   ./stt doctor
-  ./stt preload --model small
-  ./stt listen --model small
+  ./stt preload
+  ./stt listen
 
 EOF
