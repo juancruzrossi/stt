@@ -1,20 +1,20 @@
 # STT
 
-Local speech-to-text dictation using Python and Faster Whisper.
+Simple, fast local speech-to-text dictation with Python and Faster Whisper.
 
 STT records from the microphone, transcribes locally, and pastes the text where
-the cursor is focused. It does not use a paid API.
+the cursor is focused.
 
 ## Install
 
-Recommended install:
+macOS and Linux:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/juancruzrossi/stt/main/install.sh | bash
 ```
 
-Private repository note: the `curl` command only works from machines that can
-access the raw GitHub file. If that is not available, clone the repository:
+Private repository note: the `curl` command only works from machines with access
+to the raw GitHub file. If that is not available, clone the repository:
 
 ```bash
 git clone https://github.com/juancruzrossi/stt.git
@@ -29,6 +29,9 @@ git clone https://github.com/juancruzrossi/stt.git
 cd stt
 .\install.ps1
 ```
+
+The `curl | bash` installer is for macOS/Linux shells. On Windows, use
+PowerShell and `install.ps1`.
 
 The installer:
 
