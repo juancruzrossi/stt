@@ -83,8 +83,6 @@ Setup complete.
 
 Try:
   cd "$ROOT_DIR"
-  ./stt doctor
-  ./stt preload
   ./stt listen
 
 EOF

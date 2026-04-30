@@ -15,8 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-stt = "fw_dictation.cli:main"
-fw-dictation = "fw_dictation.cli:main"
+stt = "stt_app.cli:main"
 
 [build-system]
 requires = ["setuptools>=69", "wheel"]

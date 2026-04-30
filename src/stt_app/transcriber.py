@@ -59,36 +59,6 @@ def transcribe_audio(
     return text, info
 
 
-def transcribe_waveform(
-    waveform,
-    *,
-    model_name: str = "small",
-    language: str | None = None,
-    task: str = "transcribe",
-    device: str = "cpu",
-    compute_type: str = "int8",
-    beam_size: int = 5,
-    local_files_only: bool = False,
-) -> tuple[str, object]:
-    model = load_model(
-        model_name,
-        device=device,
-        compute_type=compute_type,
-        local_files_only=local_files_only,
-    )
-    segments, info = model.transcribe(
-        waveform,
-        language=language,
-        task=task,
-        beam_size=beam_size,
-        vad_filter=True,
-        vad_parameters={"min_silence_duration_ms": 350},
-        condition_on_previous_text=False,
-    )
-    text = join_segments(segments)
-    return text, info
-
-
 def join_segments(segments: Iterable[object]) -> str:
     parts = [getattr(segment, "text", "").strip() for segment in segments]
     return " ".join(part for part in parts if part).strip()
