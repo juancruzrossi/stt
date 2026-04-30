@@ -2,9 +2,6 @@
 
 Simple, fast local speech-to-text dictation with Python and Faster Whisper.
 
-STT records from the microphone, transcribes locally, and pastes the text where
-the cursor is focused.
-
 ## Install
 
 macOS and Linux:
@@ -13,8 +10,7 @@ macOS and Linux:
 curl -fsSL https://raw.githubusercontent.com/juancruzrossi/stt/main/install.sh | bash
 ```
 
-Private repository note: the `curl` command only works from machines with access
-to the raw GitHub file. If that is not available, clone the repository:
+From source:
 
 ```bash
 git clone https://github.com/juancruzrossi/stt.git
@@ -30,9 +26,6 @@ cd stt
 .\install.ps1
 ```
 
-The `curl | bash` installer is for macOS/Linux shells. On Windows, use
-PowerShell and `install.ps1`.
-
 The installer:
 
 - Installs `uv` if needed.
@@ -40,13 +33,6 @@ The installer:
 - Installs locked Python dependencies into an isolated `.venv`.
 - Downloads the local STT model.
 - Installs the `stt` command into `~/.local/bin/stt`.
-
-Runtime files stay isolated in the install directory:
-
-```text
-.venv/
-.cache/
-```
 
 ## macOS Permissions
 
@@ -109,9 +95,6 @@ stt transcribe /path/to/spanish-audio.mp3 --task translate
 stt listen --task translate
 ```
 
-Limitation: Whisper translates to English only. English-to-Spanish translation is
-not implemented and would require an additional local translation model.
-
 ## Model
 
 The installer downloads:
@@ -124,15 +107,6 @@ Reference:
 
 https://huggingface.co/Systran/faster-whisper-small
 
-It is the CTranslate2 conversion of OpenAI's `whisper-small`, used by Faster
-Whisper for efficient local inference.
-
-The model is cached inside the install directory:
-
-```text
-.cache/huggingface/hub/models--Systran--faster-whisper-small
-```
-
 Check cached model size:
 
 ```bash
@@ -143,8 +117,7 @@ stt models
 
 Supported targets:
 
-- macOS Intel.
-- macOS Apple Silicon.
+- macOS Apple Silicon/Intel.
 - Linux, preferably X11 for global hotkeys.
 - Windows.
 
@@ -234,9 +207,3 @@ Security-sensitive permissions:
 - Microphone access records audio.
 - Accessibility/Input Monitoring enables global hotkeys and simulated paste.
 - Clipboard access is used briefly to paste the transcript.
-
-For managed company devices:
-
-- Review the source code.
-- Keep `uv.lock` committed.
-- Download or copy the model in an approved process.
