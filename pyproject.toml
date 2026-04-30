@@ -1,7 +1,7 @@
 [project]
 name = "stt"
 version = "0.1.0"
-description = "Local speech-to-text dictation using Faster Whisper."
+description = "Simple, fast local python speech-to-text dictation with Faster Whisper."
 requires-python = ">=3.10,<3.13"
 dependencies = [
   "click>=8.1",

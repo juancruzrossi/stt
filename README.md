@@ -1,6 +1,6 @@
 # STT
 
-Simple, fast local speech-to-text dictation with Python and Faster Whisper.
+Simple, fast local python speech-to-text dictation with Faster Whisper.
 
 ## Install
 
