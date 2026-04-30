@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import platform
 import queue
+import sys
 import threading
 from pathlib import Path
 from collections.abc import Callable
@@ -16,6 +17,24 @@ from .cache import faster_whisper_cache_entries, human_size, huggingface_hub_cac
 DEFAULT_MODEL = "small"
 DEFAULT_LANGUAGE = "auto"
 MIN_SECONDS = 0.35
+
+
+class StatusLine:
+    def __init__(self, message: str) -> None:
+        self.message = message
+        self._enabled = sys.stdout.isatty()
+
+    def __enter__(self) -> None:
+        if not self._enabled:
+            return
+        sys.stdout.write(f"{self.message}\n")
+        sys.stdout.flush()
+
+    def __exit__(self, *_exc_info: object) -> None:
+        if not self._enabled:
+            return
+        sys.stdout.write("\033[F\033[K")
+        sys.stdout.flush()
 
 
 @click.group(name="stt", context_settings={"help_option_names": ["-h", "--help"]})
@@ -144,12 +163,13 @@ def listen(
     stop_event = threading.Event()
 
     try:
-        model = load_model(
-            DEFAULT_MODEL,
-            device=device,
-            compute_type=compute_type,
-            local_files_only=offline,
-        )
+        with StatusLine("Initializing stt..."):
+            model = load_model(
+                DEFAULT_MODEL,
+                device=device,
+                compute_type=compute_type,
+                local_files_only=offline,
+            )
     except Exception as exc:  # noqa: BLE001
         raise click.ClickException(str(exc)) from exc
 
