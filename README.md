@@ -148,9 +148,6 @@ Supported targets:
 - Linux, preferably X11 for global hotkeys.
 - Windows.
 
-The current full validation was done on macOS Intel. Linux and Windows should be
-validated on the actual company image.
-
 ## Troubleshooting
 
 ### macOS
