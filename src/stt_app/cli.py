@@ -111,7 +111,12 @@ def transcribe(
 
 
 @main.command()
-@click.option("--tap-interval", type=float, default=0.45, show_default=True)
+@click.option(
+    "--tap-interval",
+    type=click.FloatRange(min=0.1),
+    default=0.45,
+    show_default=True,
+)
 @click.option(
     "--keep-clipboard",
     is_flag=True,

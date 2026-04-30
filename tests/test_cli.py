@@ -19,3 +19,10 @@ def test_transcribe_missing_file_fails_before_model_load() -> None:
 
     assert result.exit_code != 0
     assert "does not exist" in result.output
+
+
+def test_listen_rejects_invalid_tap_interval() -> None:
+    result = CliRunner().invoke(main, ["listen", "--tap-interval", "0"])
+
+    assert result.exit_code != 0
+    assert "Invalid value for '--tap-interval'" in result.output

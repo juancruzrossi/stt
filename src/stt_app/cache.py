@@ -5,25 +5,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-KNOWN_SIZE_MODELS = {
-    "tiny",
-    "tiny.en",
-    "base",
-    "base.en",
-    "small",
-    "small.en",
-    "medium",
-    "medium.en",
-    "large-v1",
-    "large-v2",
-    "large-v3",
-    "large",
-    "distil-large-v3",
-    "large-v3-turbo",
-    "turbo",
-}
-
-
 @dataclass(frozen=True)
 class ModelCacheEntry:
     repo_id: str
@@ -43,18 +24,6 @@ def huggingface_hub_cache() -> Path:
     if hf_hub_cache := os.environ.get("HF_HUB_CACHE"):
         return Path(hf_hub_cache).expanduser()
     return huggingface_home() / "hub"
-
-
-def model_to_repo_id(model: str) -> str:
-    if "/" in model:
-        return model
-    if model in KNOWN_SIZE_MODELS:
-        return f"Systran/faster-whisper-{model}"
-    return model
-
-
-def repo_id_to_cache_dir(repo_id: str) -> Path:
-    return huggingface_hub_cache() / f"models--{repo_id.replace('/', '--')}"
 
 
 def dir_size(path: Path) -> int:

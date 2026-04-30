@@ -33,15 +33,22 @@ class MicrophoneRecorder:
             dtype="float32",
             callback=self._callback,
         )
-        self._stream.start()
+        try:
+            self._stream.start()
+        except Exception:
+            self._stream.close()
+            self._stream = None
+            raise
 
     def stop(self) -> tuple[np.ndarray, float]:
         if self._stream is None:
             return np.array([], dtype=np.float32), 0.0
         stream = self._stream
         self._stream = None
-        stream.stop()
-        stream.close()
+        try:
+            stream.stop()
+        finally:
+            stream.close()
         duration = time.monotonic() - self._started_at
         with self._lock:
             chunks = self._chunks
