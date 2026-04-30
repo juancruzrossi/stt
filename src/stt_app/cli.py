@@ -66,7 +66,12 @@ def models() -> None:
 
 @main.command()
 @click.argument("audio", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-@click.option("--output", "-o", type=click.Path(dir_okay=False, path_type=Path), help="Output .txt file.")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Output .txt file.",
+)
 @common_options
 def transcribe(
     audio: Path,
@@ -107,7 +112,11 @@ def transcribe(
 
 @main.command()
 @click.option("--tap-interval", type=float, default=0.45, show_default=True)
-@click.option("--keep-clipboard", is_flag=True, help="Do not restore the previous clipboard value.")
+@click.option(
+    "--keep-clipboard",
+    is_flag=True,
+    help="Do not restore the previous clipboard value.",
+)
 @common_options
 def listen(
     language: str,
@@ -182,7 +191,9 @@ def listen(
                     vad_parameters={"min_silence_duration_ms": 350},
                     condition_on_previous_text=False,
                 )
-                text = " ".join(segment.text.strip() for segment in segments if segment.text.strip())
+                text = " ".join(
+                    segment.text.strip() for segment in segments if segment.text.strip()
+                )
                 if not text:
                     click.echo("No text detected.")
                     continue

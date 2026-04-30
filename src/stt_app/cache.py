@@ -91,5 +91,7 @@ def faster_whisper_cache_entries() -> list[ModelCacheEntry]:
         if not path.is_dir():
             continue
         repo_id = path.name.removeprefix("models--").replace("--", "/")
-        entries.append(ModelCacheEntry(repo_id=repo_id, path=path, size_bytes=dir_size(path)))
+        entries.append(
+            ModelCacheEntry(repo_id=repo_id, path=path, size_bytes=dir_size(path))
+        )
     return entries
