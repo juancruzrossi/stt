@@ -1,0 +1,23 @@
+[project]
+name = "stt"
+version = "0.1.0"
+description = "Local macOS speech-to-text dictation using Faster Whisper."
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "faster-whisper>=1.2.1,<2",
+  "huggingface-hub>=0.26",
+  "numpy>=1.26",
+  "onnxruntime==1.23.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "pyperclip>=1.9.0",
+  "pynput>=1.7.7",
+  "sounddevice>=0.5.0",
+  "soundfile>=0.12.1",
+]
+
+[project.scripts]
+stt = "fw_dictation.cli:main"
+fw-dictation = "fw_dictation.cli:main"
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"

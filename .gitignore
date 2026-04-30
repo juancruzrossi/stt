@@ -1,0 +1,22 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.python-version
+
+# uv / local environments
+.venv/
+.cache/
+
+# Local logs
+*.log
+*.err.log
+
+# Local audio/test artifacts
+*.wav
+*.aiff
+*.mp3
+*.m4a
+*.txt
