@@ -27,7 +27,7 @@ script_dir() {
 }
 
 is_project_dir() {
-  [[ -f "$1/pyproject.toml" && -d "$1/src/stt_app" ]]
+  [[ -f "$1/pyproject.toml" && -d "$1/src/stt" ]]
 }
 
 install_uv_if_missing() {
@@ -123,7 +123,7 @@ download_model() {
   log "Downloading local STT model if needed"
   cd "$project_dir"
   uv run --no-dev python - <<'PY'
-from stt_app.transcriber import load_model
+from stt.transcriber import load_model
 
 load_model("small", device="cpu", compute_type="int8")
 print("Model ready: Systran/faster-whisper-small")

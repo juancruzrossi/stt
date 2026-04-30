@@ -22,7 +22,7 @@ Write-Host "Installing Python dependencies with uv..."
 uv sync --locked --python 3.12 --no-dev
 
 Write-Host "Downloading local STT model if needed..."
-uv run --no-dev python -c "from stt_app.transcriber import load_model; load_model('small', device='cpu', compute_type='int8'); print('Model ready: Systran/faster-whisper-small')"
+uv run --no-dev python -c "from stt.transcriber import load_model; load_model('small', device='cpu', compute_type='int8'); print('Model ready: Systran/faster-whisper-small')"
 
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 $CmdPath = Join-Path $BinDir "stt.cmd"

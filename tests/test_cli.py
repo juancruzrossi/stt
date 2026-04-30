@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from click.testing import CliRunner
 
-from stt_app.cli import main
+from stt.cli import main
 
 
 def test_help_lists_core_commands() -> None:

@@ -24,7 +24,7 @@ dev = [
 ]
 
 [project.scripts]
-stt = "stt_app.cli:main"
+stt = "stt.cli:main"
 
 [build-system]
 requires = ["setuptools>=69", "wheel"]

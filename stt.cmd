@@ -13,4 +13,4 @@ if errorlevel 1 (
 )
 
 cd /d "%ROOT_DIR%"
-uv run --no-dev python -m stt_app %*
+uv run --no-dev python -m stt %*
