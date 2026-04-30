@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
 
+import stt.cli as cli
+from stt import audio
+from stt.cache import ModelCacheEntry
 from stt.cli import main, print_verbose_text
 
 
@@ -11,6 +16,7 @@ def test_help_lists_core_commands() -> None:
 
     assert result.exit_code == 0
     assert "listen" in result.output
+    assert "doctor" in result.output
     assert "transcribe" in result.output
     assert "models" in result.output
 
@@ -40,3 +46,31 @@ def test_print_verbose_text_separates_entries(capsys: pytest.CaptureFixture[str]
     print_verbose_text("hello")
 
     assert capsys.readouterr().out == "----\nhello\n"
+
+
+def test_doctor_reports_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    model_path = tmp_path / "model"
+    model_path.mkdir()
+    monkeypatch.setattr(
+        cli,
+        "faster_whisper_cache_entries",
+        lambda: [
+            ModelCacheEntry(
+                repo_id="Systran/faster-whisper-small",
+                path=model_path,
+                size_bytes=128,
+            )
+        ],
+    )
+    monkeypatch.setattr(cli.shutil, "which", lambda command: f"/bin/{command}")
+    monkeypatch.setattr(
+        audio,
+        "probe_microphone",
+        lambda: audio.MicrophoneProbe(ok=True, device="Built-in Microphone"),
+    )
+
+    result = CliRunner().invoke(main, ["doctor"])
+
+    assert result.exit_code == 0
+    assert "STT Doctor" in result.output
+    assert "OK: stt is ready." in result.output

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from dataclasses import dataclass
 import threading
 import time
 from typing import Any
@@ -11,6 +12,12 @@ import sounddevice as sd
 
 class MicrophoneUnavailableError(RuntimeError):
     """Raised when the input device cannot be opened or used."""
+
+
+@dataclass(frozen=True)
+class MicrophoneProbe:
+    ok: bool
+    device: str
 
 
 class MicrophoneRecorder:
@@ -81,3 +88,36 @@ class MicrophoneRecorder:
             print(f"Audio warning: {status}", flush=True)
         with self._lock:
             self._chunks.append(indata.copy())
+
+
+def default_input_device_name() -> str:
+    try:
+        device = sd.query_devices(kind="input")
+    except sd.PortAudioError as exc:
+        raise MicrophoneUnavailableError from exc
+
+    if isinstance(device, dict):
+        return str(device.get("name") or "Unknown")
+    return str(device)
+
+
+def probe_microphone(*, sample_rate: int = 16000, channels: int = 1) -> MicrophoneProbe:
+    device = "Unknown"
+    stream: sd.InputStream | None = None
+    try:
+        device = default_input_device_name()
+        stream = sd.InputStream(
+            samplerate=sample_rate,
+            channels=channels,
+            dtype="float32",
+        )
+        stream.start()
+        stream.stop()
+    except (MicrophoneUnavailableError, sd.PortAudioError):
+        return MicrophoneProbe(ok=False, device=device)
+    finally:
+        if stream is not None:
+            with suppress(sd.PortAudioError):
+                stream.close()
+
+    return MicrophoneProbe(ok=True, device=device)

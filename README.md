@@ -86,6 +86,14 @@ Verbose output is separated with:
 ----
 ```
 
+## Doctor
+
+Check the install, model, and microphone:
+
+```bash
+stt doctor
+```
+
 ## Audio Files
 
 ```bash
