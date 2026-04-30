@@ -1,4 +1,4 @@
-"""Utilidad de dictado local con Faster Whisper."""
+"""Local speech-to-text dictation using Faster Whisper."""
 
 __all__ = ["__version__"]
 

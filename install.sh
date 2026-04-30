@@ -114,7 +114,7 @@ sync_python_environment() {
   export HF_HOME="${STT_HF_HOME:-$project_dir/.cache/huggingface}"
   export XDG_CACHE_HOME="${STT_XDG_CACHE_HOME:-$project_dir/.cache}"
   export UV_CACHE_DIR="${STT_UV_CACHE_DIR:-$project_dir/.cache/uv}"
-  uv sync --python 3.12
+  uv sync --python 3.12 --no-dev
 }
 
 download_model() {
@@ -122,7 +122,7 @@ download_model() {
 
   log "Downloading local STT model if needed"
   cd "$project_dir"
-  uv run python - <<'PY'
+  uv run --no-dev python - <<'PY'
 from stt_app.transcriber import load_model
 
 load_model("small", device="cpu", compute_type="int8")

@@ -31,4 +31,4 @@ else
 fi
 
 cd "$ROOT_DIR"
-exec "$UV_BIN" run python -m stt_app "$@"
+exec "$UV_BIN" run --no-dev python -m stt_app "$@"
