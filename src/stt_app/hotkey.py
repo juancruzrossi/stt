@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
 
 from pynput import keyboard
 
@@ -16,11 +17,11 @@ class DoubleTapToggleListener:
     def __init__(
         self,
         key: str,
-        on_toggle,
+        on_toggle: Callable[[], None],
         *,
         max_interval: float = 0.45,
         suppress: bool = False,
-    ) -> None:  # noqa: ANN001
+    ) -> None:
         self.key = parse_single_key(key)
         self.on_toggle = on_toggle
         self.max_interval = max_interval
@@ -41,12 +42,16 @@ class DoubleTapToggleListener:
         if self._listener is not None:
             self._listener.stop()
 
-    def _canonical(self, key) -> object:  # noqa: ANN001
+    def _canonical(self, key: keyboard.Key | keyboard.KeyCode | None) -> object:
+        if key is None:
+            return key
         if self._listener is None:
             return key
         return self._listener.canonical(key)
 
-    def _on_release(self, key) -> None:  # noqa: ANN001
+    def _on_release(self, key: keyboard.Key | keyboard.KeyCode | None) -> None:
+        if key is None:
+            return
         now = time.monotonic()
         if self._canonical(key) != self.key:
             return
@@ -63,7 +68,7 @@ class DoubleTapToggleListener:
             self.on_toggle()
 
 
-def parse_single_key(value: str) -> object:
+def parse_single_key(value: str) -> keyboard.Key | keyboard.KeyCode:
     if key := KEYS.get(value.lower()):
         return key
     raise ValueError(f"Unsupported trigger key: {value}")

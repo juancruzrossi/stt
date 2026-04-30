@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 import time
+from typing import Any
 
 import numpy as np
 import sounddevice as sd
@@ -50,7 +51,13 @@ class MicrophoneRecorder:
         waveform = np.concatenate(chunks, axis=0).reshape(-1).astype(np.float32)
         return waveform, duration
 
-    def _callback(self, indata, frames, time_info, status) -> None:  # noqa: ANN001
+    def _callback(
+        self,
+        indata: np.ndarray[Any, Any],
+        frames: int,
+        time_info: object,
+        status: sd.CallbackFlags,
+    ) -> None:
         if status:
             print(f"Audio warning: {status}", flush=True)
         with self._lock:

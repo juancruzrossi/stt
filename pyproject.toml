@@ -17,7 +17,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "mypy>=1.20.2",
   "pytest>=8.0",
+  "types-pynput>=1.8.1.20260408",
+  "types-pyperclip>=1.11.0.20260408",
 ]
 
 [project.scripts]
@@ -26,3 +29,12 @@ stt = "stt_app.cli:main"
 [build-system]
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+warn_return_any = true
+
+[[tool.mypy.overrides]]
+module = ["faster_whisper", "sounddevice"]
+ignore_missing_imports = true

@@ -4,6 +4,8 @@ import platform
 import queue
 import threading
 from pathlib import Path
+from collections.abc import Callable
+from typing import Any, cast
 
 import click
 
@@ -22,7 +24,7 @@ def main() -> None:
     """Local speech-to-text dictation."""
 
 
-def common_options(command):
+def common_options(command: Callable[..., Any]) -> Callable[..., Any]:
     command = click.option(
         "--offline",
         is_flag=True,
@@ -43,7 +45,7 @@ def common_options(command):
         show_default=True,
         help="Language code such as es/en, or auto for detection.",
     )(command)
-    return command
+    return cast(Callable[..., Any], command)
 
 
 @main.command()
