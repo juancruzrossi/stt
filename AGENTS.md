@@ -29,8 +29,11 @@ uv run --group dev mypy src
 
 ## Versioning
 
-Update `pyproject.toml` before committing changes that affect runtime behavior,
-CLI UX, install flow, dependencies, or public user-facing behavior.
+For changes that affect runtime behavior, CLI UX, install flow, dependencies,
+or public user-facing behavior, propose the appropriate version bump to the
+user before updating `pyproject.toml`.
+
+Only update the version after the user confirms the proposed version number.
 
 Use SemVer:
 
