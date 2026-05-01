@@ -26,41 +26,45 @@ class MicrophoneRecorder:
         self.channels = channels
         self._chunks: list[np.ndarray] = []
         self._lock = threading.Lock()
+        self._stream_lock = threading.Lock()
         self._stream: sd.InputStream | None = None
         self._started_at = 0.0
 
     @property
     def is_recording(self) -> bool:
-        return self._stream is not None
+        with self._stream_lock:
+            return self._stream is not None
 
     def start(self) -> None:
-        if self._stream is not None:
-            return
-        with self._lock:
-            self._chunks = []
-        self._started_at = time.monotonic()
-        stream: sd.InputStream | None = None
-        try:
-            stream = sd.InputStream(
-                samplerate=self.sample_rate,
-                channels=self.channels,
-                dtype="float32",
-                callback=self._callback,
-            )
-            stream.start()
-        except sd.PortAudioError as exc:
-            if stream is not None:
-                with suppress(sd.PortAudioError):
-                    stream.close()
-            raise MicrophoneUnavailableError from exc
+        with self._stream_lock:
+            if self._stream is not None:
+                return
+            with self._lock:
+                self._chunks = []
+            self._started_at = time.monotonic()
+            stream: sd.InputStream | None = None
+            try:
+                stream = sd.InputStream(
+                    samplerate=self.sample_rate,
+                    channels=self.channels,
+                    dtype="float32",
+                    callback=self._callback,
+                )
+                stream.start()
+            except sd.PortAudioError as exc:
+                if stream is not None:
+                    with suppress(sd.PortAudioError):
+                        stream.close()
+                raise MicrophoneUnavailableError from exc
 
-        self._stream = stream
+            self._stream = stream
 
     def stop(self) -> tuple[np.ndarray, float]:
-        if self._stream is None:
-            return np.array([], dtype=np.float32), 0.0
-        stream = self._stream
-        self._stream = None
+        with self._stream_lock:
+            if self._stream is None:
+                return np.array([], dtype=np.float32), 0.0
+            stream = self._stream
+            self._stream = None
         try:
             stream.stop()
         except sd.PortAudioError as exc:
@@ -76,6 +80,20 @@ class MicrophoneRecorder:
             return np.array([], dtype=np.float32), duration
         waveform = np.concatenate(chunks, axis=0).reshape(-1).astype(np.float32)
         return waveform, duration
+
+    def close(self) -> None:
+        """Release the microphone stream without returning buffered audio."""
+        with self._stream_lock:
+            if self._stream is None:
+                return
+            stream = self._stream
+            self._stream = None
+        with suppress(sd.PortAudioError):
+            stream.stop()
+        with suppress(sd.PortAudioError):
+            stream.close()
+        with self._lock:
+            self._chunks = []
 
     def _callback(
         self,

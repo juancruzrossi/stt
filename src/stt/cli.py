@@ -290,6 +290,8 @@ def listen(
     try:
         listener.run()
     finally:
+        listener.stop()
+        recorder.close()
         stop_event.set()
         jobs.put(None)
         thread.join(timeout=2)
