@@ -96,6 +96,8 @@ stt doctor
 
 ## Audio Files
 
+Transcribe a local audio/video file to text:
+
 ```bash
 stt transcribe /path/to/audio.mp3
 ```

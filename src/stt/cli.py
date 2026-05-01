@@ -45,11 +45,6 @@ def main() -> None:
 
 
 def common_options(command: Callable[..., Any]) -> Callable[..., Any]:
-    command = click.option(
-        "--offline",
-        is_flag=True,
-        help="Use local model files only; fail instead of downloading.",
-    )(command)
     command = click.option("--compute-type", default="int8", hidden=True)(command)
     command = click.option("--device", default="cpu", hidden=True)(command)
     command = click.option(
@@ -134,7 +129,11 @@ def doctor(ctx: click.Context) -> None:
 
 
 @main.command()
-@click.argument("audio", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.argument(
+    "audio",
+    metavar="AUDIO_FILE",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
 @click.option(
     "--output",
     "-o",
@@ -149,9 +148,8 @@ def transcribe(
     task: str,
     device: str,
     compute_type: str,
-    offline: bool,
 ) -> None:
-    """Transcribe an audio file."""
+    """Transcribe a local audio/video file to text."""
     from .transcriber import transcribe_audio
 
     try:
@@ -162,7 +160,7 @@ def transcribe(
             task=task,
             device=device,
             compute_type=compute_type,
-            local_files_only=offline,
+            local_files_only=True,
         )
     except Exception as exc:  # noqa: BLE001
         raise click.ClickException(str(exc)) from exc
@@ -202,7 +200,6 @@ def listen(
     task: str,
     device: str,
     compute_type: str,
-    offline: bool,
     tap_interval: float,
     keep_clipboard: bool,
     verbose: bool,
@@ -224,7 +221,7 @@ def listen(
                 DEFAULT_MODEL,
                 device=device,
                 compute_type=compute_type,
-                local_files_only=offline,
+                local_files_only=True,
             )
     except Exception as exc:  # noqa: BLE001
         raise click.ClickException(str(exc)) from exc
