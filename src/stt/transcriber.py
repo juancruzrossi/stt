@@ -6,6 +6,8 @@ from typing import Iterable
 
 from faster_whisper import WhisperModel
 
+from .model_config import configured_model
+
 
 def default_cpu_threads() -> int:
     count = os.cpu_count() or 4
@@ -18,10 +20,10 @@ def load_model(
     device: str = "cpu",
     compute_type: str = "int8",
     cpu_threads: int | None = None,
-    local_files_only: bool = False,
+    local_files_only: bool = True,
 ) -> WhisperModel:
     return WhisperModel(
-        model,
+        configured_model(model),
         device=device,
         compute_type=compute_type,
         cpu_threads=cpu_threads or default_cpu_threads(),
@@ -39,7 +41,7 @@ def transcribe_audio(
     compute_type: str = "int8",
     beam_size: int = 5,
     vad_filter: bool = True,
-    local_files_only: bool = False,
+    local_files_only: bool = True,
 ) -> tuple[str, object]:
     model = load_model(
         model_name,

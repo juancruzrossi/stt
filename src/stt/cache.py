@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from .model_config import MODEL_NAME, MODEL_REPO, configured_model
+
 
 @dataclass(frozen=True)
 class ModelCacheEntry:
@@ -51,6 +53,19 @@ def human_size(size: int) -> str:
 
 
 def faster_whisper_cache_entries() -> list[ModelCacheEntry]:
+    if os.environ.get("STT_MODEL_PATH"):
+        try:
+            path = Path(configured_model(MODEL_NAME))
+        except FileNotFoundError:
+            return []
+        return [
+            ModelCacheEntry(
+                repo_id=MODEL_REPO,
+                path=path,
+                size_bytes=dir_size(path),
+            )
+        ]
+
     hub = huggingface_hub_cache()
     if not hub.exists():
         return []

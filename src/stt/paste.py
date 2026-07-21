@@ -32,4 +32,5 @@ def paste_text(text: str, *, restore_clipboard: bool = True) -> None:
 
     if restore_clipboard:
         time.sleep(0.7)
-        write_clipboard(previous)
+        if read_clipboard() == text:
+            write_clipboard(previous)

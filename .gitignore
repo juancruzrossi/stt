@@ -8,6 +8,7 @@ __pycache__/
 # uv / local environments
 .venv/
 .cache/
+.models/
 
 # Local logs
 *.log

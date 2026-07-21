@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+umask 077
 
-REPO_URL="${STT_REPO_URL:-https://github.com/juancruzrossi/stt.git}"
-INSTALL_DIR="${STT_INSTALL_DIR:-$HOME/.local/share/stt}"
 BIN_DIR="${STT_BIN_DIR:-$HOME/.local/bin}"
 OS_NAME="$(uname -s)"
 
@@ -30,52 +29,22 @@ is_project_dir() {
   [[ -f "$1/pyproject.toml" && -d "$1/src/stt" ]]
 }
 
-install_uv_if_missing() {
-  if command_exists uv; then
-    return
-  fi
-
-  log "Installing uv"
-  case "$OS_NAME" in
-    Darwin)
-      if command_exists brew; then
-        brew install uv
-      else
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-      fi
-      ;;
-    Linux)
-      curl -LsSf https://astral.sh/uv/install.sh | sh
-      ;;
-    *)
-      fail "Unsupported OS for install.sh: $OS_NAME. Use install.ps1 on Windows."
-      ;;
-  esac
-
-  export PATH="$HOME/.local/bin:$PATH"
-  command_exists uv || fail "uv installation completed but uv is still not on PATH."
+require_uv() {
+  command_exists uv || fail \
+    "uv is required. Install it through your approved package manager, then rerun install.sh."
 }
 
-install_system_dependencies() {
+check_system_dependencies() {
   log "Checking system audio dependencies"
   case "$OS_NAME" in
     Darwin)
-      command_exists brew || fail "Homebrew is required on macOS: https://brew.sh"
-      if ! brew list portaudio >/dev/null 2>&1; then
-        brew install portaudio
+      if command_exists brew && ! brew list portaudio >/dev/null 2>&1; then
+        echo "PortAudio was not found in Homebrew. Install it through your approved package manager if microphone access fails."
       fi
       ;;
     Linux)
-      if command_exists apt-get; then
-        sudo apt-get update
-        sudo apt-get install -y portaudio19-dev xclip xsel
-      elif command_exists dnf; then
-        sudo dnf install -y portaudio-devel xclip xsel
-      elif command_exists pacman; then
-        sudo pacman -S --needed portaudio xclip xsel
-      else
-        echo "Could not detect apt, dnf, or pacman."
-        echo "Install PortAudio and xclip/xsel manually if microphone or paste fails."
+      if command_exists pkg-config && ! pkg-config --exists portaudio-2.0; then
+        echo "PortAudio development files were not found. Install them through your approved package manager if microphone access fails."
       fi
       ;;
     *)
@@ -88,22 +57,10 @@ resolve_project_dir() {
   local dir
   dir="$(script_dir || true)"
 
-  if [[ -n "$dir" ]] && is_project_dir "$dir"; then
-    echo "$dir"
-    return
+  if [[ -z "$dir" ]] || ! is_project_dir "$dir"; then
+    fail "Run install.sh from a reviewed local STT checkout; remote pipe installs are disabled."
   fi
-
-  command_exists git || fail "git is required to install from $REPO_URL"
-
-  log "Installing STT into $INSTALL_DIR"
-  if [[ -d "$INSTALL_DIR/.git" ]]; then
-    git -C "$INSTALL_DIR" pull --ff-only
-  else
-    mkdir -p "$(dirname -- "$INSTALL_DIR")"
-    git clone "$REPO_URL" "$INSTALL_DIR"
-  fi
-
-  echo "$INSTALL_DIR"
+  echo "$dir"
 }
 
 sync_python_environment() {
@@ -114,6 +71,13 @@ sync_python_environment() {
   export HF_HOME="${STT_HF_HOME:-$project_dir/.cache/huggingface}"
   export XDG_CACHE_HOME="${STT_XDG_CACHE_HOME:-$project_dir/.cache}"
   export UV_CACHE_DIR="${STT_UV_CACHE_DIR:-$project_dir/.cache/uv}"
+  export UV_NO_MODIFY_PATH=1
+  export UV_PYTHON_DOWNLOADS=never
+  export HF_HUB_DISABLE_TELEMETRY=1
+  export HF_HUB_DISABLE_IMPLICIT_TOKEN=1
+  export DO_NOT_TRACK=1
+  uv python find 3.12 >/dev/null 2>&1 || fail \
+    "Python 3.12 is required. Install it through your approved package manager."
   uv sync --locked --python 3.12 --no-dev
 }
 
@@ -122,12 +86,15 @@ download_model() {
 
   log "Downloading local STT model if needed"
   cd "$project_dir"
-  uv run --no-dev python - <<'PY'
-from stt.transcriber import load_model
-
-load_model("small", device="cpu", compute_type="int8")
-print("Model ready: Systran/faster-whisper-small")
-PY
+  export STT_MODEL_PATH="${STT_MODEL_PATH:-$project_dir/.models/faster-whisper-small}"
+  uv run --frozen --no-sync --no-dev python -m stt.install_model "$STT_MODEL_PATH"
+  chmod go-rwx \
+    "$project_dir/.venv" \
+    "$STT_MODEL_PATH" \
+    "$STT_MODEL_PATH/config.json" \
+    "$STT_MODEL_PATH/model.bin" \
+    "$STT_MODEL_PATH/tokenizer.json" \
+    "$STT_MODEL_PATH/vocabulary.txt"
 }
 
 install_launcher() {
@@ -146,8 +113,8 @@ install_launcher() {
 }
 
 main() {
-  install_uv_if_missing
-  install_system_dependencies
+  require_uv
+  check_system_dependencies
 
   local project_dir
   project_dir="$(resolve_project_dir)"

@@ -11,6 +11,7 @@ dependencies = [
   "onnxruntime==1.23.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
   "pyperclip>=1.9.0",
   "pynput>=1.7.7",
+  "setuptools>=83.0.0",
   "sounddevice>=0.5.0",
   "soundfile>=0.12.1",
 ]
@@ -27,7 +28,7 @@ dev = [
 stt = "stt.cli:main"
 
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.mypy]
