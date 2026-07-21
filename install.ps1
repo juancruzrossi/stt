@@ -4,12 +4,7 @@ $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BinDir = if ($env:STT_BIN_DIR) { $env:STT_BIN_DIR } else { Join-Path $env:USERPROFILE ".local\bin" }
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        Write-Host "Installing uv with winget..."
-        winget install --id astral-sh.uv -e
-    } else {
-        throw "uv is not installed. Install it from https://docs.astral.sh/uv/getting-started/installation/ and rerun this script."
-    }
+    throw "uv is required. Install it through your approved package manager and rerun this script."
 }
 
 Set-Location $RootDir
@@ -17,12 +12,23 @@ Set-Location $RootDir
 $env:HF_HOME = if ($env:STT_HF_HOME) { $env:STT_HF_HOME } else { Join-Path $RootDir ".cache\huggingface" }
 $env:XDG_CACHE_HOME = if ($env:STT_XDG_CACHE_HOME) { $env:STT_XDG_CACHE_HOME } else { Join-Path $RootDir ".cache" }
 $env:UV_CACHE_DIR = if ($env:STT_UV_CACHE_DIR) { $env:STT_UV_CACHE_DIR } else { Join-Path $RootDir ".cache\uv" }
+$env:STT_MODEL_PATH = if ($env:STT_MODEL_PATH) { $env:STT_MODEL_PATH } else { Join-Path $RootDir ".models\faster-whisper-small" }
+$env:UV_NO_MODIFY_PATH = "1"
+$env:UV_PYTHON_DOWNLOADS = "never"
+$env:HF_HUB_DISABLE_TELEMETRY = "1"
+$env:HF_HUB_DISABLE_IMPLICIT_TOKEN = "1"
+$env:DO_NOT_TRACK = "1"
+
+uv python find 3.12 *> $null
+if ($LASTEXITCODE -ne 0) {
+    throw "Python 3.12 is required. Install it through your approved package manager."
+}
 
 Write-Host "Installing Python dependencies with uv..."
 uv sync --locked --python 3.12 --no-dev
 
 Write-Host "Downloading local STT model if needed..."
-uv run --no-dev python -c "from stt.transcriber import load_model; load_model('small', device='cpu', compute_type='int8'); print('Model ready: Systran/faster-whisper-small')"
+uv run --frozen --no-sync --no-dev python -m stt.install_model $env:STT_MODEL_PATH
 
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 $CmdPath = Join-Path $BinDir "stt.cmd"

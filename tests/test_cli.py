@@ -69,7 +69,6 @@ def test_doctor_reports_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
             )
         ],
     )
-    monkeypatch.setattr(cli.shutil, "which", lambda command: f"/bin/{command}")
     monkeypatch.setattr(
         audio,
         "probe_microphone",

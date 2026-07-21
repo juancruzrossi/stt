@@ -7,12 +7,6 @@ Simple, fast local python speech-to-text dictation with Faster Whisper.
 macOS and Linux:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/juancruzrossi/stt/main/install.sh | bash
-```
-
-From source:
-
-```bash
 git clone https://github.com/juancruzrossi/stt.git
 cd stt
 ./install.sh
@@ -28,11 +22,15 @@ cd stt
 
 The installer:
 
-- Installs `uv` if needed.
-- Installs system audio dependencies when needed.
+- Requires an approved `uv` and Python 3.12 installation.
+- Never modifies shell profiles or installs system packages.
 - Installs locked Python dependencies into an isolated `.venv`.
-- Downloads the local STT model.
+- Downloads the local STT model from a pinned Hugging Face commit and verifies
+  every required file with SHA-256.
 - Installs the `stt` command into `~/.local/bin/stt`.
+
+The installer must run from a local checkout. Remote pipe installs and automatic
+repository updates are intentionally disabled.
 
 ## macOS Permissions
 
@@ -122,7 +120,7 @@ stt listen --task translate
 The installer downloads:
 
 ```text
-Systran/faster-whisper-small
+Systran/faster-whisper-small@536b0662742c02347bc0e980a01041f333bce120
 ```
 
 Reference:
@@ -218,14 +216,22 @@ If the target app runs as Administrator, run the terminal as Administrator too.
 Network access is used for:
 
 - Installing Python dependencies with `uv`.
-- Installing system audio dependencies when needed.
-- Downloading the model from Hugging Face during install.
+- Downloading the pinned model from Hugging Face during install.
 
-After install, transcription runs locally. The tool does not intentionally upload
-microphone audio, transcripts, clipboard content, or keystrokes.
+After install, the launcher executes the locked virtual environment directly,
+enables Hugging Face offline mode, disables implicit tokens and telemetry, and
+loads the model from its pinned local path. Runtime transcription does not need
+`uv` or network access. The tool does not intentionally upload microphone audio,
+transcripts, clipboard content, or keystrokes.
 
 Security-sensitive permissions:
 
 - Microphone access records audio.
 - Accessibility/Input Monitoring enables global hotkeys and simulated paste.
 - Clipboard access is used briefly to paste the transcript.
+
+On macOS these permissions belong to the terminal application, so they also
+apply to other processes launched from that terminal. Use a dedicated terminal
+profile and grant only the permissions required for STT.
+
+See [SECURITY.md](SECURITY.md) for the complete data-flow and hardening notes.

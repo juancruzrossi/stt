@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import platform
 import queue
-import shutil
 import sys
 import threading
 from pathlib import Path
@@ -13,9 +12,10 @@ import click
 
 from . import __version__
 from .cache import faster_whisper_cache_entries, human_size, huggingface_hub_cache
+from .model_config import MODEL_NAME
 
 
-DEFAULT_MODEL = "small"
+DEFAULT_MODEL = MODEL_NAME
 DEFAULT_LANGUAGE = "auto"
 MIN_SECONDS = 0.35
 
@@ -86,12 +86,9 @@ def doctor(ctx: click.Context) -> None:
     from .audio import probe_microphone
 
     issues: list[str] = []
-    uv_path = shutil.which("uv")
     entries = faster_whisper_cache_entries()
     microphone = probe_microphone()
 
-    if uv_path is None:
-        issues.append("uv was not found in PATH.")
     if not entries:
         issues.append("Faster Whisper model was not found.")
     if not microphone.ok:
@@ -105,7 +102,7 @@ def doctor(ctx: click.Context) -> None:
     click.echo(f"  Platform: {platform.system()} {platform.machine()}")
     click.echo()
     click.echo("Install")
-    click.echo(f"  uv: {'OK' if uv_path else 'Missing'}")
+    click.echo(f"  Runtime: {sys.executable}")
     click.echo()
     click.echo("Model")
     if entries:

@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from importlib import import_module
 import platform
 import time
+from types import ModuleType
 
 import pyperclip
-from pynput import keyboard
+
+
+def _keyboard() -> ModuleType:
+    return import_module("pynput.keyboard")
 
 
 def read_clipboard() -> str:
@@ -22,6 +27,7 @@ def paste_text(text: str, *, restore_clipboard: bool = True) -> None:
     previous = read_clipboard() if restore_clipboard else ""
     write_clipboard(text)
 
+    keyboard = _keyboard()
     controller = keyboard.Controller()
     modifier = keyboard.Key.cmd if platform.system() == "Darwin" else keyboard.Key.ctrl
 
@@ -32,4 +38,5 @@ def paste_text(text: str, *, restore_clipboard: bool = True) -> None:
 
     if restore_clipboard:
         time.sleep(0.7)
-        write_clipboard(previous)
+        if read_clipboard() == text:
+            write_clipboard(previous)

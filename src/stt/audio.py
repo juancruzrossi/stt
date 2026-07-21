@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from contextlib import suppress
 from dataclasses import dataclass
+from importlib import import_module
 import threading
 import time
 from typing import Any
 
 import numpy as np
-import sounddevice as sd
 
 
 class MicrophoneUnavailableError(RuntimeError):
@@ -20,6 +20,13 @@ class MicrophoneProbe:
     device: str
 
 
+def _sounddevice() -> Any:
+    try:
+        return import_module("sounddevice")
+    except (ImportError, OSError) as exc:
+        raise MicrophoneUnavailableError from exc
+
+
 class MicrophoneRecorder:
     def __init__(self, *, sample_rate: int = 16000, channels: int = 1) -> None:
         self.sample_rate = sample_rate
@@ -27,7 +34,7 @@ class MicrophoneRecorder:
         self._chunks: list[np.ndarray] = []
         self._lock = threading.Lock()
         self._stream_lock = threading.Lock()
-        self._stream: sd.InputStream | None = None
+        self._stream: Any | None = None
         self._started_at = 0.0
 
     @property
@@ -42,7 +49,8 @@ class MicrophoneRecorder:
             with self._lock:
                 self._chunks = []
             self._started_at = time.monotonic()
-            stream: sd.InputStream | None = None
+            sd = _sounddevice()
+            stream: Any | None = None
             try:
                 stream = sd.InputStream(
                     samplerate=self.sample_rate,
@@ -65,6 +73,7 @@ class MicrophoneRecorder:
                 return np.array([], dtype=np.float32), 0.0
             stream = self._stream
             self._stream = None
+        sd = _sounddevice()
         try:
             stream.stop()
         except sd.PortAudioError as exc:
@@ -88,6 +97,7 @@ class MicrophoneRecorder:
                 return
             stream = self._stream
             self._stream = None
+        sd = _sounddevice()
         with suppress(sd.PortAudioError):
             stream.stop()
         with suppress(sd.PortAudioError):
@@ -100,7 +110,7 @@ class MicrophoneRecorder:
         indata: np.ndarray[Any, Any],
         frames: int,
         time_info: object,
-        status: sd.CallbackFlags,
+        status: object,
     ) -> None:
         if status:
             print(f"Audio warning: {status}", flush=True)
@@ -109,6 +119,7 @@ class MicrophoneRecorder:
 
 
 def default_input_device_name() -> str:
+    sd = _sounddevice()
     try:
         device = sd.query_devices(kind="input")
     except sd.PortAudioError as exc:
@@ -121,8 +132,9 @@ def default_input_device_name() -> str:
 
 def probe_microphone(*, sample_rate: int = 16000, channels: int = 1) -> MicrophoneProbe:
     device = "Unknown"
-    stream: sd.InputStream | None = None
+    stream: Any | None = None
     try:
+        sd = _sounddevice()
         device = default_input_device_name()
         stream = sd.InputStream(
             samplerate=sample_rate,
@@ -131,7 +143,11 @@ def probe_microphone(*, sample_rate: int = 16000, channels: int = 1) -> Micropho
         )
         stream.start()
         stream.stop()
-    except (MicrophoneUnavailableError, sd.PortAudioError):
+    except MicrophoneUnavailableError:
+        return MicrophoneProbe(ok=False, device=device)
+    except Exception as exc:
+        if not isinstance(exc, sd.PortAudioError):
+            raise
         return MicrophoneProbe(ok=False, device=device)
     finally:
         if stream is not None:
