@@ -6,7 +6,7 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
   "click>=8.1",
   "faster-whisper>=1.2.1,<2",
-  "huggingface-hub>=0.26",
+  "huggingface-hub>=1.24.0",
   "numpy>=1.26",
   "onnxruntime==1.23.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
   "pyperclip>=1.9.0",
