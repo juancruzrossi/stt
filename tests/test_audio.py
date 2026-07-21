@@ -1,17 +1,30 @@
 from __future__ import annotations
 
-import pytest
-import sounddevice as sd
+from types import SimpleNamespace
 
+import pytest
+
+import stt.audio as audio
 from stt.audio import MicrophoneRecorder, MicrophoneUnavailableError
+
+
+class FakePortAudioError(Exception):
+    pass
 
 
 def test_start_wraps_portaudio_error(monkeypatch: pytest.MonkeyPatch) -> None:
     class BrokenInputStream:
         def __init__(self, **_kwargs: object) -> None:
-            raise sd.PortAudioError("boom", -9986)
+            raise FakePortAudioError("boom", -9986)
 
-    monkeypatch.setattr(sd, "InputStream", BrokenInputStream)
+    monkeypatch.setattr(
+        audio,
+        "_sounddevice",
+        lambda: SimpleNamespace(
+            InputStream=BrokenInputStream,
+            PortAudioError=FakePortAudioError,
+        ),
+    )
 
     recorder = MicrophoneRecorder()
 
@@ -45,7 +58,14 @@ def test_close_releases_active_stream(monkeypatch: pytest.MonkeyPatch) -> None:
         streams.append(stream)
         return stream
 
-    monkeypatch.setattr(sd, "InputStream", input_stream)
+    monkeypatch.setattr(
+        audio,
+        "_sounddevice",
+        lambda: SimpleNamespace(
+            InputStream=input_stream,
+            PortAudioError=FakePortAudioError,
+        ),
+    )
 
     recorder = MicrophoneRecorder()
     recorder.start()
@@ -56,3 +76,15 @@ def test_close_releases_active_stream(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not recorder.is_recording
     assert streams[0].stopped
     assert streams[0].closed
+
+
+def test_probe_reports_missing_portaudio(monkeypatch: pytest.MonkeyPatch) -> None:
+    def unavailable() -> object:
+        raise MicrophoneUnavailableError
+
+    monkeypatch.setattr(audio, "_sounddevice", unavailable)
+
+    assert audio.probe_microphone() == audio.MicrophoneProbe(
+        ok=False,
+        device="Unknown",
+    )

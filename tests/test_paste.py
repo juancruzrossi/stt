@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
+from types import SimpleNamespace
 
 import pytest
 
@@ -24,7 +25,14 @@ def configure_paste(
     writes: list[str] = []
     monkeypatch.setattr(paste, "read_clipboard", lambda: clipboard_reads.pop(0))
     monkeypatch.setattr(paste, "write_clipboard", writes.append)
-    monkeypatch.setattr(paste.keyboard, "Controller", FakeController)
+    monkeypatch.setattr(
+        paste,
+        "_keyboard",
+        lambda: SimpleNamespace(
+            Controller=FakeController,
+            Key=SimpleNamespace(cmd="cmd", ctrl="ctrl"),
+        ),
+    )
     monkeypatch.setattr(paste.time, "sleep", lambda _seconds: None)
     return writes
 
