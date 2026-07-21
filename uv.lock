@@ -924,7 +924,7 @@ requires-dist = [
 dev = [
     { name = "mypy", specifier = ">=1.20.2" },
     { name = "pytest", specifier = ">=8.0" },
-    { name = "types-pynput", specifier = ">=1.8.1.20260408" },
+    { name = "types-pynput", specifier = ">=1.8.1.20260712" },
     { name = "types-pyperclip", specifier = ">=1.11.0.20260408" },
 ]
 
@@ -1023,11 +1023,11 @@ wheels = [
 
 [[package]]
 name = "types-pynput"
-version = "1.8.1.20260408"
+version = "1.8.1.20260712"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/75/1e/4016c6427ad1ded99486787223bec59dd068d19e47c9de1b5015658ccce8/types_pynput-1.8.1.20260408.tar.gz", hash = "sha256:25ac9ab16c2cd23d9a8eea80dc46a1a733291fdaa0b6cbd24c21b0f28944b73e", size = 11880, upload-time = "2026-04-08T04:29:46.845Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/e3/9c440c4e96055259292bca0758ece072e73c7b75f95689470b8ddb03d38e/types_pynput-1.8.1.20260712.tar.gz", hash = "sha256:0eab69f49a3b626c3da117651ffd65291fffae6bf8559ff0e976fcf6762ff20a", size = 12543, upload-time = "2026-07-12T05:13:20.791Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/0d/73a9f81494639fdf7f5d3ce0168ff96bfd38f8ecaa53fac084f5e5055853/types_pynput-1.8.1.20260408-py3-none-any.whl", hash = "sha256:1c581052b88be85e45b71bd5e8cbcfdfb613a2b45d583af367da3f6a89745c36", size = 12228, upload-time = "2026-04-08T04:29:46.014Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/41/ede4d88cffc7cfc6d7bea308c029b29451dcbc3025e01581ce3a251ce063/types_pynput-1.8.1.20260712-py3-none-any.whl", hash = "sha256:b9d6369171a0c61eeaedc0b0330c1827d13a1265ed5821bcc88f3c71d548ec0c", size = 12313, upload-time = "2026-07-12T05:13:19.846Z" },
 ]
 
 [[package]]
