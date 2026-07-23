@@ -137,6 +137,7 @@ def configure_accessibility(
     monkeypatch: pytest.MonkeyPatch,
     *,
     focus_error: int = 0,
+    is_focused: bool = True,
     role: str = "AXTextField",
     bundle_id: str | None = None,
     settable: bool = True,
@@ -149,6 +150,7 @@ def configure_accessibility(
     )
     api = SimpleNamespace(
         kAXFocusedUIElementAttribute="focused",
+        kAXFocusedAttribute="is_focused",
         kAXRoleAttribute="role",
         kAXSelectedTextAttribute="selected_text",
         kAXValueAttribute="value",
@@ -156,6 +158,8 @@ def configure_accessibility(
         AXUIElementCopyAttributeValue=lambda element, attribute, _value: (
             (focus_error, focused if focus_error == 0 else None)
             if element is application_element and attribute == "focused"
+            else (0, is_focused)
+            if attribute == "is_focused"
             else (0, role)
         ),
         AXUIElementIsAttributeSettable=lambda _element, _attribute, _value: (
@@ -181,6 +185,7 @@ def test_has_focused_editable_field_for_terminal(
 ) -> None:
     configure_accessibility(
         monkeypatch,
+        is_focused=False,
         role="AXTextArea",
         bundle_id="com.apple.Terminal",
         settable=False,
@@ -209,6 +214,14 @@ def test_has_no_focused_editable_field_when_accessibility_has_no_focus(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     configure_accessibility(monkeypatch, focus_error=-25204)
+
+    assert not paste.has_focused_editable_field()
+
+
+def test_has_no_focused_editable_field_for_stale_focus(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure_accessibility(monkeypatch, is_focused=False)
 
     assert not paste.has_focused_editable_field()
 

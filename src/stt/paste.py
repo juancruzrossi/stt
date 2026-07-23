@@ -95,6 +95,14 @@ def has_focused_editable_field() -> bool | None:
         ):
             return True
 
+        error, is_focused = api.AXUIElementCopyAttributeValue(
+            focused,
+            api.kAXFocusedAttribute,
+            None,
+        )
+        if error != 0 or not is_focused:
+            return False
+
         for attribute in (api.kAXSelectedTextAttribute, api.kAXValueAttribute):
             error, settable = api.AXUIElementIsAttributeSettable(
                 focused,
