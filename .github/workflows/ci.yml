@@ -10,7 +10,11 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     env:
       UV_PYTHON_DOWNLOADS: never
@@ -27,8 +31,10 @@ jobs:
       - run: uv run --frozen --no-sync pytest
       - run: uv run --frozen --no-sync mypy src
       - run: uvx --from ruff==0.15.22 ruff check src tests
-      - run: shellcheck install.sh stt
+      - if: runner.os == 'Linux'
+        run: shellcheck install.sh stt
       - name: Audit runtime dependencies
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           uv export --locked --no-dev --no-emit-project --no-hashes > "$RUNNER_TEMP/runtime.txt"
