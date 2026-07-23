@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from importlib import import_module
 import threading
 import time
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -28,9 +29,16 @@ def _sounddevice() -> Any:
 
 
 class MicrophoneRecorder:
-    def __init__(self, *, sample_rate: int = 16000, channels: int = 1) -> None:
+    def __init__(
+        self,
+        *,
+        sample_rate: int = 16000,
+        channels: int = 1,
+        on_level: Callable[[float], None] | None = None,
+    ) -> None:
         self.sample_rate = sample_rate
         self.channels = channels
+        self._on_level = on_level
         self._chunks: list[np.ndarray] = []
         self._lock = threading.Lock()
         self._stream_lock = threading.Lock()
@@ -114,6 +122,9 @@ class MicrophoneRecorder:
     ) -> None:
         if status:
             print(f"Audio warning: {status}", flush=True)
+        if self._on_level is not None:
+            rms = float(np.sqrt(np.mean(np.square(indata, dtype=np.float64))))
+            self._on_level(rms)
         with self._lock:
             self._chunks.append(indata.copy())
 

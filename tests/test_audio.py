@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 import stt.audio as audio
@@ -88,3 +89,17 @@ def test_probe_reports_missing_portaudio(monkeypatch: pytest.MonkeyPatch) -> Non
         ok=False,
         device="Unknown",
     )
+
+
+def test_callback_reports_microphone_level() -> None:
+    levels: list[float] = []
+    recorder = MicrophoneRecorder(on_level=levels.append)
+
+    recorder._callback(
+        np.array([[0.25], [-0.25]], dtype=np.float32),
+        frames=2,
+        time_info=object(),
+        status=None,
+    )
+
+    assert levels == [pytest.approx(0.25)]

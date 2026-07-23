@@ -202,17 +202,19 @@ def listen(
     verbose: bool,
 ) -> None:
     """Run global hotkey dictation."""
-    from .audio import MicrophoneRecorder, MicrophoneUnavailableError
-    from .hotkey import DoubleTapToggleListener
-    from .paste import deliver_text, has_focused_editable_field
-    from .transcriber import load_model
+    from .overlay import ListeningIndicator
 
     trigger_key = default_trigger_key()
-    recorder = MicrophoneRecorder()
-    jobs: queue.Queue[tuple[object, float, bool | None] | None] = queue.Queue()
-    stop_event = threading.Event()
-
+    indicator = ListeningIndicator()
     try:
+        indicator.start()
+        from .audio import MicrophoneRecorder, MicrophoneUnavailableError
+        from .hotkey import DoubleTapToggleListener
+        from .paste import deliver_text, has_focused_editable_field
+        from .transcriber import load_model
+
+        on_level = indicator.update_level if platform.system() == "Darwin" else None
+        recorder = MicrophoneRecorder(on_level=on_level)
         with StatusLine("Initializing stt..."):
             model = load_model(
                 DEFAULT_MODEL,
@@ -221,7 +223,12 @@ def listen(
                 local_files_only=True,
             )
     except Exception as exc:  # noqa: BLE001
+        indicator.close()
         raise click.ClickException(str(exc)) from exc
+
+    jobs: queue.Queue[tuple[object, float, bool | None] | None] = queue.Queue()
+    stop_event = threading.Event()
+    processing = threading.Event()
 
     click.echo(
         f"Ready. Double-tap {trigger_key_label(trigger_key)} to start; "
@@ -229,14 +236,18 @@ def listen(
     )
 
     def on_start() -> None:
-        if recorder.is_recording:
+        if recorder.is_recording or processing.is_set():
             return
         recorder.start()
+        indicator.show()
 
     def on_stop() -> None:
         waveform, duration = recorder.stop()
         if duration < MIN_SECONDS or waveform.size == 0:
+            indicator.hide()
             return
+        processing.set()
+        indicator.show_processing()
         input_was_focused = has_focused_editable_field()
         jobs.put((waveform, duration, input_was_focused))
 
@@ -247,6 +258,7 @@ def listen(
             else:
                 on_start()
         except MicrophoneUnavailableError:
+            indicator.hide()
             click.echo("Microphone unavailable. Try again.", err=True)
 
     def worker() -> None:
@@ -281,6 +293,9 @@ def listen(
                     print_verbose_text(text)
             except Exception as exc:  # noqa: BLE001
                 click.echo(f"Transcription error: {exc}", err=True)
+            finally:
+                indicator.hide()
+                processing.clear()
 
     thread = threading.Thread(target=worker, daemon=True)
     thread.start()
@@ -294,6 +309,7 @@ def listen(
     finally:
         listener.stop()
         recorder.close()
+        indicator.close()
         stop_event.set()
         jobs.put(None)
         thread.join(timeout=2)
