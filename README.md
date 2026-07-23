@@ -73,11 +73,10 @@ stt transcribe /path/to/audio.mp3 --output transcript.txt
 
 ## Translation
 
-Whisper can translate speech to English:
+Translate speech to English or viceversa:
 
 ```bash
 stt transcribe /path/to/spanish-audio.mp3 --task translate
-stt listen --task translate
 ```
 
 ## Model
@@ -85,25 +84,19 @@ stt listen --task translate
 The installer downloads:
 
 ```text
-Systran/faster-whisper-small@536b0662742c02347bc0e980a01041f333bce120
+Systran/faster-whisper-small
 ```
 
 Reference:
 
 https://huggingface.co/Systran/faster-whisper-small
 
-Check cached model size:
-
-```bash
-stt models
-```
-
-## Platform Notes
+## Platform
 
 Supported targets:
 
 - macOS Apple Silicon/Intel.
-- Linux, preferably X11 for global hotkeys.
+- Linux.
 - Windows.
 
 ## Troubleshooting
@@ -120,13 +113,11 @@ export PATH="$HOME/.local/bin:$PATH"
 
 **Double-tap Command does nothing.**
 
-Enable Accessibility and Input Monitoring for your terminal app. Then fully
-quit and reopen the terminal.
+Enable Accessibility and Input Monitoring for your terminal app. Then quit and reopen the terminal.
 
 **The microphone does not record.**
 
-Enable Microphone permission for your terminal app. Then quit and reopen the
-terminal.
+Enable Microphone permission for your terminal app. Then quit and reopen the terminal.
 
 ### Linux
 
@@ -171,10 +162,6 @@ Run:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\install.ps1
 ```
-
-**Paste does not work in an elevated app.**
-
-If the target app runs as Administrator, run the terminal as Administrator too.
 
 ## Privacy and Security
 
