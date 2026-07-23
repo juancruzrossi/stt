@@ -20,18 +20,6 @@ cd stt
 .\install.ps1
 ```
 
-The installer:
-
-- Requires an approved `uv` and Python 3.12 installation.
-- Never modifies shell profiles or installs system packages.
-- Installs locked Python dependencies into an isolated `.venv`.
-- Downloads the local STT model from a pinned Hugging Face commit and verifies
-  every required file with SHA-256.
-- Installs the `stt` command into `~/.local/bin/stt`.
-
-The installer must run from a local checkout. Remote pipe installs and automatic
-repository updates are intentionally disabled.
-
 ## macOS Permissions
 
 Enable permissions for your terminal app in:
@@ -42,7 +30,7 @@ System Settings > Privacy & Security > Accessibility
 System Settings > Privacy & Security > Input Monitoring
 ```
 
-After changing permissions, quit the terminal app completely and reopen it.
+Reload terminal.
 
 ## Usage
 
@@ -50,38 +38,15 @@ After changing permissions, quit the terminal app completely and reopen it.
 stt listen
 ```
 
-On macOS:
-
-1. Focus a text field.
-2. Double-tap `Command` to start recording.
-3. Speak.
-4. Double-tap `Command` again to stop.
-5. The transcript is pasted at the cursor.
-
-On Linux and Windows, the default trigger is double-tap `Control`.
-
-By default, language detection is automatic:
-
-- Spanish audio becomes Spanish text.
-- English audio becomes English text.
-
-Force a language only when needed:
-
-```bash
-stt listen --language es
-stt listen --language en
-```
+1. Double-tap `Command` on macOS or `Control` on Linux/Windows to start recording.
+2. Speak.
+3. Double-tap the same key again to stop.
+4. The transcript is pasted into the focused text field. If none is focused, it remains on the clipboard.
 
 Print each transcription in the terminal:
 
 ```bash
 stt listen --verbose
-```
-
-Verbose output is separated with:
-
-```text
-----
 ```
 
 ## Doctor

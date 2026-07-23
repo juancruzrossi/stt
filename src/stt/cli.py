@@ -204,12 +204,12 @@ def listen(
     """Run global hotkey dictation."""
     from .audio import MicrophoneRecorder, MicrophoneUnavailableError
     from .hotkey import DoubleTapToggleListener
-    from .paste import paste_text
+    from .paste import deliver_text, has_focused_editable_field
     from .transcriber import load_model
 
     trigger_key = default_trigger_key()
     recorder = MicrophoneRecorder()
-    jobs: queue.Queue[tuple[object, float] | None] = queue.Queue()
+    jobs: queue.Queue[tuple[object, float, bool | None] | None] = queue.Queue()
     stop_event = threading.Event()
 
     try:
@@ -237,7 +237,8 @@ def listen(
         waveform, duration = recorder.stop()
         if duration < MIN_SECONDS or waveform.size == 0:
             return
-        jobs.put((waveform, duration))
+        input_was_focused = has_focused_editable_field()
+        jobs.put((waveform, duration, input_was_focused))
 
     def on_toggle() -> None:
         try:
@@ -254,7 +255,7 @@ def listen(
             if item is None:
                 return
 
-            waveform, _duration = item
+            waveform, _duration, input_was_focused = item
             try:
                 segments, _info = model.transcribe(
                     waveform,
@@ -271,7 +272,11 @@ def listen(
                 if not text:
                     continue
 
-                paste_text(text, restore_clipboard=not keep_clipboard)
+                deliver_text(
+                    text,
+                    input_was_focused=input_was_focused,
+                    restore_clipboard=not keep_clipboard,
+                )
                 if verbose:
                     print_verbose_text(text)
             except Exception as exc:  # noqa: BLE001
