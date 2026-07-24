@@ -1,22 +1,10 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
 
-import stt.paste as paste
-
-
-class FakeController:
-    def pressed(self, _modifier: object) -> nullcontext[None]:
-        return nullcontext()
-
-    def press(self, _key: str) -> None:
-        pass
-
-    def release(self, _key: str) -> None:
-        pass
+from stt import paste
 
 
 def configure_paste(
@@ -25,14 +13,7 @@ def configure_paste(
     writes: list[str] = []
     monkeypatch.setattr(paste, "read_clipboard", lambda: clipboard_reads.pop(0))
     monkeypatch.setattr(paste, "write_clipboard", writes.append)
-    monkeypatch.setattr(
-        paste,
-        "_keyboard",
-        lambda: SimpleNamespace(
-            Controller=FakeController,
-            Key=SimpleNamespace(cmd="cmd", ctrl="ctrl"),
-        ),
-    )
+    monkeypatch.setattr(paste, "_post_command_v", lambda: None)
     monkeypatch.setattr(paste.time, "sleep", lambda _seconds: None)
     return writes
 
@@ -113,26 +94,6 @@ def test_deliver_text_pastes_and_keeps_clipboard(
     assert calls == [("transcript", False)]
 
 
-def test_deliver_text_keeps_transcript_when_focus_detection_is_unavailable(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    calls: list[tuple[str, bool]] = []
-    monkeypatch.setattr(paste, "has_focused_editable_field", lambda: None)
-    monkeypatch.setattr(
-        paste,
-        "paste_text",
-        lambda text, *, restore_clipboard: calls.append((text, restore_clipboard)),
-    )
-
-    paste.deliver_text(
-        "transcript",
-        input_was_focused=None,
-        restore_clipboard=True,
-    )
-
-    assert calls == [("transcript", False)]
-
-
 def configure_accessibility(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -167,7 +128,6 @@ def configure_accessibility(
             settable,
         ),
     )
-    monkeypatch.setattr(paste.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(paste, "_application_services", lambda: api)
     monkeypatch.setattr(paste, "_frontmost_application", lambda: application)
 
@@ -229,21 +189,9 @@ def test_has_no_focused_editable_field_for_stale_focus(
 def test_has_no_focused_editable_field_when_accessibility_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(paste.platform, "system", lambda: "Darwin")
-
     def fail_to_load_accessibility() -> None:
         raise RuntimeError("Accessibility unavailable")
 
     monkeypatch.setattr(paste, "_application_services", fail_to_load_accessibility)
 
     assert not paste.has_focused_editable_field()
-
-
-@pytest.mark.parametrize("system", ["Linux", "Windows"])
-def test_focus_detection_is_unavailable_outside_macos(
-    monkeypatch: pytest.MonkeyPatch,
-    system: str,
-) -> None:
-    monkeypatch.setattr(paste.platform, "system", lambda: system)
-
-    assert paste.has_focused_editable_field() is None

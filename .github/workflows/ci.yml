@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-15, macos-15-intel]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     env:
@@ -31,10 +31,8 @@ jobs:
       - run: uv run --frozen --no-sync pytest
       - run: uv run --frozen --no-sync mypy src
       - run: uvx --from ruff==0.15.22 ruff check src tests
-      - if: runner.os == 'Linux'
-        run: shellcheck install.sh stt
       - name: Audit runtime dependencies
-        if: runner.os == 'Linux'
+        if: matrix.os == 'macos-15'
         shell: bash
         run: |
           uv export --locked --no-dev --no-emit-project --no-hashes > "$RUNNER_TEMP/runtime.txt"

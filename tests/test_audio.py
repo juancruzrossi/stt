@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import stt.audio as audio
+from stt import audio
 from stt.audio import MicrophoneRecorder, MicrophoneUnavailableError
 
 

@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from contextlib import suppress
-from importlib import import_module
 import math
 import os
-import platform
 import subprocess
 import sys
 import time
+from contextlib import suppress
+from importlib import import_module
 from typing import Any
-
 
 FRAME_INTERVAL = 1 / 30
 LEVEL_INTERVAL = 1 / 20
@@ -29,7 +27,7 @@ class ListeningIndicator:
         self._start_attempted = False
 
     def start(self) -> None:
-        if self._start_attempted or platform.system() != "Darwin":
+        if self._start_attempted:
             return
         self._start_attempted = True
 
@@ -136,7 +134,7 @@ def _run_macos_overlay() -> None:
         drag_window_origin: Any = None
 
         def initWithFrame_(self, frame: Any) -> Any:
-            self = objc.super(IndicatorView, self).initWithFrame_(frame)
+            self = objc.super(IndicatorView, self).initWithFrame_(frame)  # noqa: PLW0642
             if self is not None:
                 self.started_at = time.monotonic()
             return self
@@ -158,13 +156,12 @@ def _run_macos_overlay() -> None:
         def advance(self) -> None:
             if self.state == "processing":
                 self.level = 0.0
+                self.phase += 0.06 if reduce_motion else 0.18
             else:
                 self.level += (self.target_level - self.level) * 0.28
                 self.target_level *= 0.92
-            if self.state == "processing":
-                self.phase += 0.06 if reduce_motion else 0.18
-            elif not reduce_motion:
-                self.phase += 0.18
+                if not reduce_motion:
+                    self.phase += 0.18
             self.setNeedsDisplay_(True)
 
         def acceptsFirstMouse_(self, _event: Any) -> bool:
@@ -286,7 +283,7 @@ def _run_macos_overlay() -> None:
                 Foundation.NSString.stringWithString_(
                     f"{elapsed // 60}:{elapsed % 60:02d}"
                 ).drawAtPoint_withAttributes_(
-                    Foundation.NSMakePoint(150.0, 16.0), timer_attributes
+                    Foundation.NSMakePoint(140.0, 15.5), timer_attributes
                 )
 
         def _drawLabel_alpha_(self, label: str, alpha: float) -> None:
@@ -308,7 +305,7 @@ def _run_macos_overlay() -> None:
                 AppKit.NSForegroundColorAttributeName: label_color,
             }
             Foundation.NSString.stringWithString_(label).drawAtPoint_withAttributes_(
-                Foundation.NSMakePoint(63.0, 15.5),
+                Foundation.NSMakePoint(63.5, 15.0),
                 attributes,
             )
 
@@ -341,7 +338,13 @@ def _run_macos_overlay() -> None:
                 self.input_buffer = lines.pop()
                 for line in lines:
                     if line in {b"listening", b"processing"}:
+                        starts_new_recording = line == b"listening" and (
+                            not self.visible or self.hiding
+                        )
                         self.view.setState_(line.decode())
+                        if starts_new_recording:
+                            self.view.previous_state = self.view.state
+                            self.view.state_changed_at = 0.0
                         if not self.visible or self.hiding:
                             self.transition_start_opacity = self.opacity
                             self.transition_started_at = now
@@ -396,7 +399,7 @@ def _run_macos_overlay() -> None:
 
     app = AppKit.NSApplication.sharedApplication()
     app.setActivationPolicy_(AppKit.NSApplicationActivationPolicyAccessory)
-    frame = Foundation.NSMakeRect(0.0, 0.0, 200.0, 46.0)
+    frame = Foundation.NSMakeRect(0.0, 0.0, 184.0, 46.0)
     window = AppKit.NSPanel.alloc().initWithContentRect_styleMask_backing_defer_(
         frame,
         AppKit.NSWindowStyleMaskBorderless | AppKit.NSWindowStyleMaskNonactivatingPanel,
@@ -448,5 +451,5 @@ def _run_macos_overlay() -> None:
     window.orderOut_(None)
 
 
-if __name__ == "__main__" and platform.system() == "Darwin":
+if __name__ == "__main__":
     _run_macos_overlay()

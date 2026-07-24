@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from faster_whisper import WhisperModel
 
-from .model_config import configured_model
+from .model_config import MODEL_NAME, configured_model
+from .terms import load_hotwords
 
 
 def default_cpu_threads() -> int:
@@ -34,7 +35,7 @@ def load_model(
 def transcribe_audio(
     audio: str | Path,
     *,
-    model_name: str = "small",
+    model_name: str = MODEL_NAME,
     language: str | None = None,
     task: str = "transcribe",
     device: str = "cpu",
@@ -56,6 +57,7 @@ def transcribe_audio(
         beam_size=beam_size,
         vad_filter=vad_filter,
         condition_on_previous_text=False,
+        hotwords=load_hotwords(),
     )
     text = join_segments(segments)
     return text, info

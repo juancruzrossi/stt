@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from contextlib import suppress
-from dataclasses import dataclass
-from importlib import import_module
 import threading
 import time
 from collections.abc import Callable
+from contextlib import suppress
+from dataclasses import dataclass
+from importlib import import_module
 from typing import Any
 
 import numpy as np

@@ -1,10 +1,8 @@
-# STT
+# STT for macOS
 
-Simple, fast local python speech-to-text dictation with Faster Whisper.
+Simple, fast, local speech-to-text dictation with Faster Whisper.
 
 ## Install
-
-macOS and Linux:
 
 ```bash
 git clone https://github.com/juancruzrossi/stt.git
@@ -12,15 +10,7 @@ cd stt
 ./install.sh
 ```
 
-Windows:
-
-```powershell
-git clone https://github.com/juancruzrossi/stt.git
-cd stt
-.\install.ps1
-```
-
-## macOS Permissions
+## Permissions
 
 Enable permissions for your terminal app in:
 
@@ -38,7 +28,7 @@ Reload terminal.
 stt listen
 ```
 
-1. Double-tap `Command` on macOS or `Control` on Linux/Windows to start recording.
+1. Double-tap `Command` to start recording.
 2. Speak.
 3. Double-tap the same key again to stop.
 4. The transcript is pasted into the focused text field. If none is focused, it remains on the clipboard.
@@ -48,6 +38,10 @@ Print each transcription in the terminal:
 ```bash
 stt listen --verbose
 ```
+
+## Business and Custom Terms
+
+Add them one per line in `~/.config/stt/terms.txt`.
 
 ## Doctor
 
@@ -73,7 +67,7 @@ stt transcribe /path/to/audio.mp3 --output transcript.txt
 
 ## Translation
 
-Translate speech to English or viceversa:
+Translate speech to English:
 
 ```bash
 stt transcribe /path/to/spanish-audio.mp3 --task translate
@@ -84,24 +78,18 @@ stt transcribe /path/to/spanish-audio.mp3 --task translate
 The installer downloads:
 
 ```text
-Systran/faster-whisper-small
+Systran/faster-whisper-base
 ```
 
 Reference:
 
-https://huggingface.co/Systran/faster-whisper-small
+https://huggingface.co/Systran/faster-whisper-base
 
 ## Platform
 
-Supported targets:
-
 - macOS Apple Silicon/Intel.
-- Linux.
-- Windows.
 
 ## Troubleshooting
-
-### macOS
 
 **`stt` command not found.**
 
@@ -118,50 +106,6 @@ Enable Accessibility and Input Monitoring for your terminal app. Then quit and r
 **The microphone does not record.**
 
 Enable Microphone permission for your terminal app. Then quit and reopen the terminal.
-
-### Linux
-
-**Global hotkeys do not work.**
-
-Wayland may block global keyboard capture. Try X11, or use file transcription
-with `stt transcribe`.
-
-**Pasting fails.**
-
-Install clipboard helpers:
-
-```bash
-sudo apt-get install -y xclip xsel
-```
-
-**The microphone fails to open.**
-
-Install PortAudio:
-
-```bash
-sudo apt-get install -y portaudio19-dev
-```
-
-Then rerun the installer.
-
-### Windows
-
-**`stt` command not found.**
-
-Add this directory to `PATH`:
-
-```text
-%USERPROFILE%\.local\bin
-```
-
-**PowerShell blocks install.ps1.**
-
-Run:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\install.ps1
-```
 
 ## Privacy and Security
 
@@ -182,7 +126,7 @@ Security-sensitive permissions:
 - Accessibility/Input Monitoring enables global hotkeys and simulated paste.
 - Clipboard access is used briefly to paste the transcript.
 
-On macOS these permissions belong to the terminal application, so they also
+These permissions belong to the terminal application, so they also
 apply to other processes launched from that terminal. Use a dedicated terminal
 profile and grant only the permissions required for STT.
 

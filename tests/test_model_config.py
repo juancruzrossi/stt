@@ -5,8 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import stt.model_config as model_config
-import stt.transcriber as transcriber
+from stt import model_config, transcriber
 from stt.cache import faster_whisper_cache_entries
 from stt.model_config import MODEL_NAME, MODEL_REVISION, configured_model, verify_model
 

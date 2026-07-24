@@ -13,15 +13,14 @@ with Hugging Face offline mode and telemetry disabled.
 
 ## Installation
 
-- Review and clone a specific commit before running `install.sh` or
-  `install.ps1`.
-- Install `uv`, Python 3.12, and system audio dependencies through an approved
-  package manager. The installers do not bootstrap tools or use `sudo`.
+- Review and clone a specific commit before running `install.sh`.
+- Install `uv` and Python 3.12 through an approved package manager. The
+  installer does not bootstrap tools or use `sudo`.
 - Python packages are resolved from `uv.lock`; the model revision and required
   file hashes are fixed in `src/stt/model_config.py`.
 - Re-run the installer deliberately after reviewing updates. It never performs
   `git pull` or self-updates.
-- CI runs tests, static checks, shell linting, and a runtime dependency audit;
+- CI runs tests, static checks, and a runtime dependency audit;
   Dependabot proposes lockfile and workflow updates through pull requests.
 
 ## Local data

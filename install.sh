@@ -3,7 +3,6 @@ set -Eeuo pipefail
 umask 077
 
 BIN_DIR="${STT_BIN_DIR:-$HOME/.local/bin}"
-OS_NAME="$(uname -s)"
 
 log() {
   printf '\n==> %s\n' "$1"
@@ -34,23 +33,8 @@ require_uv() {
     "uv is required. Install it through your approved package manager, then rerun install.sh."
 }
 
-check_system_dependencies() {
-  log "Checking system audio dependencies"
-  case "$OS_NAME" in
-    Darwin)
-      if command_exists brew && ! brew list portaudio >/dev/null 2>&1; then
-        echo "PortAudio was not found in Homebrew. Install it through your approved package manager if microphone access fails."
-      fi
-      ;;
-    Linux)
-      if command_exists pkg-config && ! pkg-config --exists portaudio-2.0; then
-        echo "PortAudio development files were not found. Install them through your approved package manager if microphone access fails."
-      fi
-      ;;
-    *)
-      fail "Unsupported OS for install.sh: $OS_NAME. Use install.ps1 on Windows."
-      ;;
-  esac
+check_platform() {
+  [[ "$(uname -s)" == "Darwin" ]] || fail "STT supports macOS only."
 }
 
 resolve_project_dir() {
@@ -86,7 +70,7 @@ download_model() {
 
   log "Downloading local STT model if needed"
   cd "$project_dir"
-  export STT_MODEL_PATH="${STT_MODEL_PATH:-$project_dir/.models/faster-whisper-small}"
+  export STT_MODEL_PATH="${STT_MODEL_PATH:-$project_dir/.models/faster-whisper-base}"
   uv run --frozen --no-sync --no-dev python -m stt.install_model "$STT_MODEL_PATH"
   chmod go-rwx \
     "$project_dir/.venv" \
@@ -114,7 +98,7 @@ install_launcher() {
 
 main() {
   require_uv
-  check_system_dependencies
+  check_platform
 
   local project_dir
   project_dir="$(resolve_project_dir)"
