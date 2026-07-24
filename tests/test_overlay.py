@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import stt.overlay as overlay
+from stt import overlay
 
 
 class FakeInput:
@@ -29,31 +29,11 @@ class FakeProcess:
         self.terminated = True
 
 
-def test_indicator_is_disabled_outside_macos(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(overlay.platform, "system", lambda: "Windows")
-    monkeypatch.setattr(
-        overlay.subprocess,
-        "Popen",
-        lambda *_args, **_kwargs: pytest.fail("must not start a process"),
-    )
-
-    indicator = overlay.ListeningIndicator()
-    indicator.start()
-    indicator.show()
-    indicator.update_level(0.5)
-    indicator.show_processing()
-    indicator.hide()
-    indicator.close()
-
-
 def test_indicator_streams_level_and_closes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     process = FakeProcess()
     writes: list[tuple[int, bytes]] = []
-    monkeypatch.setattr(overlay.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(
         overlay.subprocess,
         "Popen",

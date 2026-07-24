@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import stt.cli as cli
-from stt import audio
+from stt import audio, cli
 from stt.cache import ModelCacheEntry
 from stt.cli import main, print_verbose_text
+from stt.model_config import MODEL_REPO
 
 
 def test_help_lists_core_commands() -> None:
@@ -49,7 +49,9 @@ def test_listen_help_includes_verbose_option() -> None:
     assert "--verbose" in result.output
 
 
-def test_print_verbose_text_separates_entries(capsys: pytest.CaptureFixture[str]) -> None:
+def test_print_verbose_text_separates_entries(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     print_verbose_text("hello")
 
     assert capsys.readouterr().out == "----\nhello\n"
@@ -63,7 +65,7 @@ def test_doctor_reports_ready(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
         "faster_whisper_cache_entries",
         lambda: [
             ModelCacheEntry(
-                repo_id="Systran/faster-whisper-small",
+                repo_id=MODEL_REPO,
                 path=model_path,
                 size_bytes=128,
             )

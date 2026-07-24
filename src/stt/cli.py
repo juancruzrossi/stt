@@ -4,18 +4,16 @@ import platform
 import queue
 import sys
 import threading
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, cast
 
 import click
 
 from . import __version__
-from .cache import faster_whisper_cache_entries, human_size, huggingface_hub_cache
+from .cache import faster_whisper_cache_entries, huggingface_hub_cache, human_size
 from .model_config import MODEL_NAME
 
-
-DEFAULT_MODEL = MODEL_NAME
 DEFAULT_LANGUAGE = "auto"
 MIN_SECONDS = 0.35
 
@@ -152,14 +150,14 @@ def transcribe(
     try:
         text, info = transcribe_audio(
             audio,
-            model_name=DEFAULT_MODEL,
+            model_name=MODEL_NAME,
             language=normalize_language(language),
             task=task,
             device=device,
             compute_type=compute_type,
             local_files_only=True,
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise click.ClickException(str(exc)) from exc
 
     if output:
@@ -204,36 +202,31 @@ def listen(
     """Run global hotkey dictation."""
     from .overlay import ListeningIndicator
 
-    trigger_key = default_trigger_key()
     indicator = ListeningIndicator()
     try:
         indicator.start()
         from .audio import MicrophoneRecorder, MicrophoneUnavailableError
-        from .hotkey import DoubleTapToggleListener
+        from .hotkey import DoubleTapCommandListener
         from .paste import deliver_text, has_focused_editable_field
+        from .terms import load_hotwords
         from .transcriber import load_model
 
-        on_level = indicator.update_level if platform.system() == "Darwin" else None
-        recorder = MicrophoneRecorder(on_level=on_level)
+        recorder = MicrophoneRecorder(on_level=indicator.update_level)
         with StatusLine("Initializing stt..."):
             model = load_model(
-                DEFAULT_MODEL,
+                MODEL_NAME,
                 device=device,
                 compute_type=compute_type,
                 local_files_only=True,
             )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         indicator.close()
         raise click.ClickException(str(exc)) from exc
 
-    jobs: queue.Queue[tuple[object, float, bool | None] | None] = queue.Queue()
-    stop_event = threading.Event()
+    jobs: queue.Queue[tuple[object, bool] | None] = queue.Queue()
     processing = threading.Event()
 
-    click.echo(
-        f"Ready. Double-tap {trigger_key_label(trigger_key)} to start; "
-        f"double-tap {trigger_key_label(trigger_key)} again to stop."
-    )
+    click.echo("Ready. Double-tap Command to start; double-tap Command again to stop.")
 
     def on_start() -> None:
         if recorder.is_recording or processing.is_set():
@@ -249,7 +242,7 @@ def listen(
         processing.set()
         indicator.show_processing()
         input_was_focused = has_focused_editable_field()
-        jobs.put((waveform, duration, input_was_focused))
+        jobs.put((waveform, input_was_focused))
 
     def on_toggle() -> None:
         try:
@@ -262,12 +255,12 @@ def listen(
             click.echo("Microphone unavailable. Try again.", err=True)
 
     def worker() -> None:
-        while not stop_event.is_set():
+        while True:
             item = jobs.get()
             if item is None:
                 return
 
-            waveform, _duration, input_was_focused = item
+            waveform, input_was_focused = item
             try:
                 segments, _info = model.transcribe(
                     waveform,
@@ -277,6 +270,7 @@ def listen(
                     vad_filter=True,
                     vad_parameters={"min_silence_duration_ms": 350},
                     condition_on_previous_text=False,
+                    hotwords=load_hotwords(),
                 )
                 text = " ".join(
                     segment.text.strip() for segment in segments if segment.text.strip()
@@ -299,8 +293,7 @@ def listen(
 
     thread = threading.Thread(target=worker, daemon=True)
     thread.start()
-    listener = DoubleTapToggleListener(
-        trigger_key,
+    listener = DoubleTapCommandListener(
         on_toggle=on_toggle,
         max_interval=tap_interval,
     )
@@ -310,7 +303,6 @@ def listen(
         listener.stop()
         recorder.close()
         indicator.close()
-        stop_event.set()
         jobs.put(None)
         thread.join(timeout=2)
 
@@ -325,13 +317,3 @@ def normalize_language(language: str) -> str | None:
 def print_verbose_text(text: str) -> None:
     click.echo("----")
     click.echo(text)
-
-
-def default_trigger_key() -> str:
-    if platform.system() == "Darwin":
-        return "cmd"
-    return "ctrl"
-
-
-def trigger_key_label(key: str) -> str:
-    return "Command" if key == "cmd" else "Control"
