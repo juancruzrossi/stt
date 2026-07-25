@@ -8,7 +8,8 @@ from typing import Any
 
 from .dictation import DictationConfig, DictationSession
 from .settings import (
-    COMMAND,
+    DOUBLE_TAP_MODIFIERS,
+    MODIFIER_KEY_CODES,
     MODIFIER_MASK,
     ActivationMode,
     AppSettings,
@@ -20,7 +21,6 @@ from .settings import (
 from .terms import load_terms, save_terms
 
 StatusCallback = Callable[[str, str | None], None]
-COMMAND_KEY_CODES = {54, 55}
 
 
 class EngineCoordinator:
@@ -171,9 +171,12 @@ def run() -> None:
         shortcut_button: Any = None
         mode_control: Any = None
         mode_help: Any = None
+        shortcut_cancel_button: Any = None
         shortcut_confirm_button: Any = None
         shortcut_candidate: HotkeyBinding | None = None
-        capture_last_command_release = 0.0
+        capture_pending_tap: HotkeyBinding | None = None
+        capture_pending_tap_at = 0.0
+        capture_chorded_modifiers = 0
         tab_control: Any = None
         general_view: Any = None
         terms_view: Any = None
@@ -243,21 +246,31 @@ def run() -> None:
                 return
             self.is_capturing = True
             self.shortcut_candidate = None
-            self.capture_last_command_release = 0.0
+            self.capture_pending_tap = None
+            self.capture_pending_tap_at = 0.0
+            self.capture_chorded_modifiers = 0
+            self.shortcut_button.setFrame_(
+                Foundation.NSMakeRect(288, 88, 104, 28)
+            )
             self.shortcut_button.setTitle_("Press shortcut…")
+            self.shortcut_cancel_button.setHidden_(False)
             self.shortcut_confirm_button.setHidden_(False)
             self.shortcut_confirm_button.setEnabled_(False)
-            self.mode_help.setStringValue_(
-                "Press a key combination or double-tap Command. Escape cancels."
-            )
+            self.mode_help.setStringValue_("")
             if self.engine is not None:
                 self.engine.apply(None)
+
+        def cancelShortcut_(self, _sender: Any) -> None:
+            self._finish_capture()
 
         def confirmShortcut_(self, _sender: Any) -> None:
             if self.shortcut_candidate is None:
                 return
             mode = self.settings.activation_mode
-            if self.shortcut_candidate.kind == ShortcutKind.DOUBLE_COMMAND:
+            if self.shortcut_candidate.kind in {
+                ShortcutKind.DOUBLE_MODIFIER,
+                ShortcutKind.DOUBLE_KEY,
+            }:
                 mode = ActivationMode.TOGGLE
             self.settings = AppSettings(
                 activation_mode=mode,
@@ -515,13 +528,27 @@ def run() -> None:
             )
             self.shortcut_button = (
                 AppKit.NSButton.alloc()
-                .initWithFrame_(Foundation.NSMakeRect(320, 88, 106, 28))
+                .initWithFrame_(Foundation.NSMakeRect(320, 88, 136, 28))
             )
             self.shortcut_button.setTitle_(self.settings.hotkey.label)
             self.shortcut_button.setBezelStyle_(AppKit.NSBezelStyleRounded)
             self.shortcut_button.setTarget_(self)
             self.shortcut_button.setAction_("recordShortcut:")
             self.general_view.addSubview_(self.shortcut_button)
+
+            self.shortcut_cancel_button = (
+                AppKit.NSButton.alloc()
+                .initWithFrame_(Foundation.NSMakeRect(400, 88, 28, 28))
+            )
+            self.shortcut_cancel_button.setTitle_("×")
+            self.shortcut_cancel_button.setToolTip_("Cancel")
+            self.shortcut_cancel_button.setBezelStyle_(
+                AppKit.NSBezelStyleCircular
+            )
+            self.shortcut_cancel_button.setTarget_(self)
+            self.shortcut_cancel_button.setAction_("cancelShortcut:")
+            self.shortcut_cancel_button.setHidden_(True)
+            self.general_view.addSubview_(self.shortcut_cancel_button)
 
             self.shortcut_confirm_button = (
                 AppKit.NSButton.alloc()
@@ -650,45 +677,42 @@ def run() -> None:
                 event_type = int(event.type())
 
                 if event_type == AppKit.NSEventTypeFlagsChanged:
-                    if key_code not in COMMAND_KEY_CODES or modifiers & COMMAND:
+                    modifier = MODIFIER_KEY_CODES.get(key_code)
+                    if modifier not in DOUBLE_TAP_MODIFIERS:
                         return None
-                    now = float(event.timestamp())
-                    if (
-                        now - self.capture_last_command_release
-                        <= 0.45
-                    ):
-                        self.capture_last_command_release = 0.0
-                        self._show_shortcut_candidate(HotkeyBinding())
-                    else:
-                        self.capture_last_command_release = now
-                    return None
+                    if modifiers & modifier:
+                        other_modifiers = modifiers & (
+                            MODIFIER_MASK & ~modifier
+                        )
+                        if other_modifiers:
+                            self.capture_chorded_modifiers |= (
+                                modifier | other_modifiers
+                            )
+                        return None
+                    if self.capture_chorded_modifiers & modifier:
+                        self.capture_chorded_modifiers &= ~modifier
+                        self.capture_pending_tap = None
+                        self.capture_pending_tap_at = 0.0
+                        return None
 
-                if key_code == 53:
-                    self._finish_capture()
-                    return None
-
-                is_function_key = key_code in {
-                    96,
-                    97,
-                    98,
-                    99,
-                    100,
-                    101,
-                    103,
-                    109,
-                    111,
-                    118,
-                    120,
-                    122,
-                }
-                if not modifiers and not is_function_key:
-                    AppKit.NSBeep()
-                    self.mode_help.setStringValue_(
-                        "Include Command, Option, Control, or Shift."
+                    self._capture_tap(
+                        HotkeyBinding.double_modifier(modifier),
+                        float(event.timestamp()),
                     )
                     return None
 
-                self.capture_last_command_release = 0.0
+                if bool(event.isARepeat()):
+                    return None
+                if not modifiers:
+                    self._capture_tap(
+                        HotkeyBinding.double_key(key_code),
+                        float(event.timestamp()),
+                    )
+                    return None
+
+                self.capture_chorded_modifiers = modifiers
+                self.capture_pending_tap = None
+                self.capture_pending_tap_at = 0.0
                 self._show_shortcut_candidate(
                     HotkeyBinding.key_combination(key_code, modifiers)
                 )
@@ -702,18 +726,41 @@ def run() -> None:
             )
 
         @objc.python_method
+        def _capture_tap(
+            self,
+            hotkey: HotkeyBinding,
+            timestamp: float,
+        ) -> None:
+            if (
+                hotkey == self.capture_pending_tap
+                and timestamp - self.capture_pending_tap_at <= 0.45
+            ):
+                self.capture_pending_tap = None
+                self.capture_pending_tap_at = 0.0
+                self._show_shortcut_candidate(hotkey)
+            else:
+                self.capture_pending_tap = hotkey
+                self.capture_pending_tap_at = timestamp
+
+        @objc.python_method
         def _show_shortcut_candidate(self, hotkey: HotkeyBinding) -> None:
             self.shortcut_candidate = hotkey
             self.shortcut_button.setTitle_(hotkey.label)
             self.shortcut_confirm_button.setEnabled_(True)
-            self.mode_help.setStringValue_("Select ✓ to save this shortcut.")
+            self.mode_help.setStringValue_("")
 
         @objc.python_method
         def _finish_capture(self, *, save: bool = False) -> None:
             self.is_capturing = False
+            self.shortcut_button.setFrame_(
+                Foundation.NSMakeRect(320, 88, 136, 28)
+            )
+            self.shortcut_cancel_button.setHidden_(True)
             self.shortcut_confirm_button.setHidden_(True)
             self.shortcut_candidate = None
-            self.capture_last_command_release = 0.0
+            self.capture_pending_tap = None
+            self.capture_pending_tap_at = 0.0
+            self.capture_chorded_modifiers = 0
             if save:
                 self._persist_settings()
             else:

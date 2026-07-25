@@ -12,6 +12,17 @@ SHIFT = 1 << 17
 CONTROL = 1 << 18
 OPTION = 1 << 19
 MODIFIER_MASK = COMMAND | SHIFT | CONTROL | OPTION
+MODIFIER_KEY_CODES = {
+    54: COMMAND,
+    55: COMMAND,
+    56: SHIFT,
+    58: OPTION,
+    59: CONTROL,
+    60: SHIFT,
+    61: OPTION,
+    62: CONTROL,
+}
+DOUBLE_TAP_MODIFIERS = frozenset(MODIFIER_KEY_CODES.values())
 
 KEY_NAMES = {
     0: "A",
@@ -90,15 +101,33 @@ class ActivationMode(StrEnum):
 
 
 class ShortcutKind(StrEnum):
-    DOUBLE_COMMAND = "double_command"
+    DOUBLE_MODIFIER = "double_modifier"
+    DOUBLE_KEY = "double_key"
     KEY_COMBINATION = "key_combination"
 
 
 @dataclass(frozen=True)
 class HotkeyBinding:
-    kind: ShortcutKind = ShortcutKind.DOUBLE_COMMAND
+    kind: ShortcutKind = ShortcutKind.DOUBLE_MODIFIER
     key_code: int | None = None
-    modifiers: int = 0
+    modifiers: int = COMMAND
+
+    @classmethod
+    def double_modifier(cls, modifier: int) -> HotkeyBinding:
+        if modifier not in DOUBLE_TAP_MODIFIERS:
+            raise ValueError("Unsupported double-tap modifier")
+        return cls(
+            kind=ShortcutKind.DOUBLE_MODIFIER,
+            modifiers=modifier,
+        )
+
+    @classmethod
+    def double_key(cls, key_code: int) -> HotkeyBinding:
+        return cls(
+            kind=ShortcutKind.DOUBLE_KEY,
+            key_code=key_code,
+            modifiers=0,
+        )
 
     @classmethod
     def key_combination(cls, key_code: int, modifiers: int) -> HotkeyBinding:
@@ -110,8 +139,19 @@ class HotkeyBinding:
 
     @property
     def label(self) -> str:
-        if self.kind == ShortcutKind.DOUBLE_COMMAND:
-            return "⌘  ⌘"
+        if self.kind == ShortcutKind.DOUBLE_MODIFIER:
+            symbol = {
+                CONTROL: "⌃",
+                OPTION: "⌥",
+                SHIFT: "⇧",
+                COMMAND: "⌘",
+            }.get(self.modifiers)
+            return f"{symbol}  {symbol}" if symbol else "Not Set"
+        if self.kind == ShortcutKind.DOUBLE_KEY:
+            if self.key_code is None:
+                return "Not Set"
+            key = KEY_NAMES.get(self.key_code, f"Key {self.key_code}")
+            return f"{key}  {key}"
         if self.key_code is None:
             return "Not Set"
 
@@ -135,7 +175,8 @@ class AppSettings:
     def normalized(self) -> AppSettings:
         if (
             self.activation_mode == ActivationMode.HOLD
-            and self.hotkey.kind == ShortcutKind.DOUBLE_COMMAND
+            and self.hotkey.kind
+            in {ShortcutKind.DOUBLE_MODIFIER, ShortcutKind.DOUBLE_KEY}
         ):
             return AppSettings(
                 activation_mode=ActivationMode.HOLD,
@@ -153,13 +194,31 @@ def load_settings(path: Path | None = None) -> AppSettings:
     try:
         payload = json.loads(source.read_text(encoding="utf-8"))
         hotkey_payload = payload["hotkey"]
+        kind_value = hotkey_payload["kind"]
+        if kind_value == "double_command":
+            hotkey = HotkeyBinding()
+        else:
+            kind = ShortcutKind(kind_value)
+            if kind == ShortcutKind.DOUBLE_MODIFIER:
+                hotkey = HotkeyBinding.double_modifier(
+                    int(hotkey_payload.get("modifiers", 0))
+                )
+            elif kind == ShortcutKind.DOUBLE_KEY:
+                key_code = hotkey_payload.get("key_code")
+                if key_code is None:
+                    raise ValueError("Missing double-tap key")
+                hotkey = HotkeyBinding.double_key(int(key_code))
+            else:
+                key_code = hotkey_payload.get("key_code")
+                if key_code is None:
+                    raise ValueError("Missing shortcut key")
+                hotkey = HotkeyBinding.key_combination(
+                    int(key_code),
+                    int(hotkey_payload.get("modifiers", 0)),
+                )
         settings = AppSettings(
             activation_mode=ActivationMode(payload["activation_mode"]),
-            hotkey=HotkeyBinding(
-                kind=ShortcutKind(hotkey_payload["kind"]),
-                key_code=hotkey_payload.get("key_code"),
-                modifiers=int(hotkey_payload.get("modifiers", 0)),
-            ),
+            hotkey=hotkey,
         )
     except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError):
         return AppSettings()
