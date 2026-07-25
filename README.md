@@ -1,8 +1,6 @@
 # STT for macOS
 
-STT is a private speech-to-text app for macOS. It transcribes with a local
-Faster Whisper model, then pastes the result into the focused text field or
-keeps it on the clipboard.
+Simple, fast, local speech-to-text dictation macOS app with Faster Whisper.
 
 ## Install
 
