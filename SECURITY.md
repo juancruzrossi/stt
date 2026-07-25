@@ -8,8 +8,8 @@ pastes it into the focused application. Audio and transcripts are not sent to a
 remote transcription service.
 
 The installer requires network access for locked Python packages and the pinned
-model revision. The installed launcher runs the virtual environment directly
-with Hugging Face offline mode and telemetry disabled.
+model revision. The installed application bundles those files and runs with
+Hugging Face offline mode and telemetry disabled.
 
 ## Installation
 
@@ -34,9 +34,9 @@ with Hugging Face offline mode and telemetry disabled.
 ## Permissions
 
 Global hotkeys and automatic paste require Accessibility and Input Monitoring;
-recording requires Microphone access. On macOS, command-line tools inherit the
-terminal application's permissions. This is an operating-system limitation and
-the main residual risk of the CLI architecture.
+recording requires Microphone access. Grant these permissions to STT. If the
+optional CLI is used, its permissions belong to the terminal application
+instead.
 
 Review and revoke permissions in System Settings when STT is no longer needed.
 Do not dictate secrets while an untrusted application has clipboard access.
