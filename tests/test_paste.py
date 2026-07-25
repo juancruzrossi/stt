@@ -7,6 +7,27 @@ import pytest
 from stt import paste
 
 
+def test_accessibility_permission_is_required(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeApplicationServices:
+        kAXTrustedCheckOptionPrompt = "prompt"
+
+        @staticmethod
+        def AXIsProcessTrustedWithOptions(options: object) -> bool:
+            assert options == {"prompt": True}
+            return False
+
+    monkeypatch.setattr(
+        paste,
+        "_application_services",
+        lambda: FakeApplicationServices,
+    )
+
+    with pytest.raises(RuntimeError, match="Accessibility required"):
+        paste.ensure_accessibility_access()
+
+
 def configure_paste(
     monkeypatch: pytest.MonkeyPatch, clipboard_reads: list[str]
 ) -> list[str]:

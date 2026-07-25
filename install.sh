@@ -3,6 +3,7 @@ set -Eeuo pipefail
 umask 077
 
 BIN_DIR="${STT_BIN_DIR:-$HOME/.local/bin}"
+APP_DIR="${STT_APP_DIR:-$HOME/Applications}"
 
 log() {
   printf '\n==> %s\n' "$1"
@@ -62,7 +63,7 @@ sync_python_environment() {
   export DO_NOT_TRACK=1
   uv python find 3.12 >/dev/null 2>&1 || fail \
     "Python 3.12 is required. Install it through your approved package manager."
-  uv sync --locked --python 3.12 --no-dev
+  uv sync --locked --python 3.12 --no-dev --group build
 }
 
 download_model() {
@@ -96,6 +97,27 @@ install_launcher() {
   fi
 }
 
+install_app() {
+  local project_dir="$1"
+  local source_app="$project_dir/dist/STT.app"
+  local destination="$APP_DIR/STT.app"
+
+  log "Building STT.app for $(uname -m)"
+  "$project_dir/build_app.sh"
+  [[ -d "$source_app" ]] || fail "STT.app build did not produce an application."
+
+  [[ -n "$APP_DIR" && "$APP_DIR" != "/" ]] || fail "Invalid app directory."
+  mkdir -p "$APP_DIR"
+  if [[ -e "$destination" || -L "$destination" ]]; then
+    [[ -d "$destination" && -f "$destination/Contents/Info.plist" ]] || \
+      fail "Refusing to replace a non-application path: $destination"
+    rm -rf -- "$destination"
+  fi
+  /usr/bin/ditto "$source_app" "$destination"
+  /usr/bin/codesign --verify --deep --strict "$destination"
+  echo "Installed: $destination"
+}
+
 main() {
   require_uv
   check_platform
@@ -106,17 +128,18 @@ main() {
   sync_python_environment "$project_dir"
   download_model "$project_dir"
   install_launcher "$project_dir"
+  install_app "$project_dir"
 
   cat <<EOF
 
-STT is installed.
+STT is installed in:
+
+  $APP_DIR/STT.app
 
 Next:
-  1. Grant Microphone, Accessibility, and Input Monitoring permissions to your terminal.
-  2. Restart the terminal.
-  3. Run:
-
-     stt listen
+  1. Open STT from your Applications folder.
+  2. Grant Microphone, Accessibility, and Input Monitoring permissions to STT.
+  3. Choose your shortcut and activation mode in Settings.
 
 EOF
 }

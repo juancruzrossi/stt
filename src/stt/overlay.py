@@ -7,6 +7,7 @@ import sys
 import time
 from contextlib import suppress
 from importlib import import_module
+from pathlib import Path
 from typing import Any
 
 FRAME_INTERVAL = 1 / 30
@@ -33,7 +34,7 @@ class ListeningIndicator:
 
         try:
             process = subprocess.Popen(
-                [sys.executable, "-m", "stt.overlay"],
+                _overlay_command(),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -101,6 +102,14 @@ class ListeningIndicator:
                 process.wait(timeout=0.4)
 
 
+def _overlay_command() -> list[str]:
+    if getattr(sys, "frozen", False):
+        helper = Path(sys.executable).with_name("stt-overlay")
+        if helper.is_file():
+            return [str(helper)]
+    return [sys.executable, "-m", "stt.overlay"]
+
+
 def _normalized_level(rms: float) -> float:
     return min(1.0, max(0.0, (rms - 0.003) / 0.07))
 
@@ -118,8 +127,12 @@ def _run_macos_overlay() -> None:
     workspace = AppKit.NSWorkspace.sharedWorkspace()
     if hasattr(workspace, "accessibilityDisplayShouldReduceMotion"):
         reduce_motion = bool(workspace.accessibilityDisplayShouldReduceMotion())
-    defaults = Foundation.NSUserDefaults.alloc().initWithSuiteName_(
-        "com.juancruzrossi.stt"
+    defaults = (
+        Foundation.NSUserDefaults.standardUserDefaults()
+        if getattr(sys, "frozen", False)
+        else Foundation.NSUserDefaults.alloc().initWithSuiteName_(
+            "com.juancruzrossi.stt"
+        )
     )
 
     class IndicatorView(AppKit.NSView):
