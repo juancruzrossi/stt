@@ -221,7 +221,16 @@ def run() -> None:
             AppKit.NSApp.terminate_(None)
             return False
 
+        def hideSettings_(self, _sender: Any) -> None:
+            self.window.orderOut_(None)
+            AppKit.NSApp.setActivationPolicy_(
+                AppKit.NSApplicationActivationPolicyAccessory
+            )
+
         def showSettings_(self, _sender: Any) -> None:
+            AppKit.NSApp.setActivationPolicy_(
+                AppKit.NSApplicationActivationPolicyRegular
+            )
             self.window.makeKeyAndOrderFront_(None)
             AppKit.NSApp.activateIgnoringOtherApps_(True)
 
@@ -318,7 +327,7 @@ def run() -> None:
             app_menu.addItem_(AppKit.NSMenuItem.separatorItem())
             quit_item = (
                 AppKit.NSMenuItem.alloc()
-                .initWithTitle_action_keyEquivalent_("Quit STT", "quit:", "q")
+                .initWithTitle_action_keyEquivalent_("Quit", "quit:", "q")
             )
             quit_item.setTarget_(self)
             app_menu.addItem_(quit_item)
@@ -383,7 +392,7 @@ def run() -> None:
 
             quit_item = (
                 AppKit.NSMenuItem.alloc()
-                .initWithTitle_action_keyEquivalent_("Quit STT", "quit:", "q")
+                .initWithTitle_action_keyEquivalent_("Quit", "quit:", "q")
             )
             quit_item.setTarget_(self)
             menu.addItem_(quit_item)
@@ -411,6 +420,11 @@ def run() -> None:
             self.window.setReleasedWhenClosed_(False)
             self.window.setDelegate_(self)
             self.window.center()
+            minimize_button = self.window.standardWindowButton_(
+                AppKit.NSWindowMiniaturizeButton
+            )
+            minimize_button.setTarget_(self)
+            minimize_button.setAction_("hideSettings:")
 
             background = AppKit.NSVisualEffectView.alloc().initWithFrame_(frame)
             background.setMaterial_(AppKit.NSVisualEffectMaterialUnderWindowBackground)
@@ -589,7 +603,7 @@ def run() -> None:
             self.terms_input = AppKit.NSTextField.alloc().initWithFrame_(
                 Foundation.NSMakeRect(10, 5, 324, 22)
             )
-            self.terms_input.setPlaceholderString_("Type a term and press Return")
+            self.terms_input.setPlaceholderString_("Type a term and press Enter")
             self.terms_input.setBezeled_(False)
             self.terms_input.setDrawsBackground_(False)
             self.terms_input.setFocusRingType_(AppKit.NSFocusRingTypeNone)
@@ -800,38 +814,62 @@ def run() -> None:
             x = 0
             y = 0
             for index, term in enumerate(self.terms):
+                title = (
+                    Foundation.NSMutableAttributedString.alloc()
+                    .initWithString_attributes_(
+                        term,
+                        {
+                            AppKit.NSFontAttributeName: (
+                                AppKit.NSFont.systemFontOfSize_weight_(
+                                    11,
+                                    AppKit.NSFontWeightRegular,
+                                )
+                            ),
+                            AppKit.NSForegroundColorAttributeName: (
+                                AppKit.NSColor.labelColor()
+                            ),
+                        },
+                    )
+                )
+                title.appendAttributedString_(
+                    Foundation.NSAttributedString.alloc()
+                    .initWithString_attributes_(
+                        "   ×",
+                        {
+                            AppKit.NSFontAttributeName: (
+                                AppKit.NSFont.systemFontOfSize_weight_(
+                                    10,
+                                    AppKit.NSFontWeightRegular,
+                                )
+                            ),
+                            AppKit.NSForegroundColorAttributeName: (
+                                AppKit.NSColor.secondaryLabelColor()
+                            ),
+                            AppKit.NSBaselineOffsetAttributeName: 1,
+                        },
+                    )
+                )
                 chip = AppKit.NSButton.alloc().init()
-                chip.setTitle_(term)
-                chip.setFont_(
-                    AppKit.NSFont.systemFontOfSize_weight_(
-                        11,
-                        AppKit.NSFontWeightRegular,
-                    )
+                chip.setAttributedTitle_(title)
+                chip.setBordered_(False)
+                chip.setWantsLayer_(True)
+                chip.layer().setCornerRadius_(6)
+                chip.layer().setBackgroundColor_(
+                    AppKit.NSColor.quaternaryLabelColor().CGColor()
                 )
-                chip.setImage_(
-                    AppKit.NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-                        "xmark",
-                        f"Remove {term}",
-                    )
-                )
-                chip.setImagePosition_(AppKit.NSImageRight)
-                chip.setImageHugsTitle_(True)
-                chip.setBezelStyle_(AppKit.NSBezelStyleAccessoryBarAction)
-                chip.setControlSize_(AppKit.NSControlSizeSmall)
                 chip.setTarget_(self)
                 chip.setAction_("removeTerm:")
                 chip.setTag_(index)
-                chip.sizeToFit()
-                width = min(220, max(58, chip.frame().size.width + 8))
+                width = min(220, max(44, title.size().width + 20))
                 if x and x + width > 414:
                     x = 0
-                    y += 30
+                    y += 28
 
-                chip.setFrame_(Foundation.NSMakeRect(x, y, width, 24))
+                chip.setFrame_(Foundation.NSMakeRect(x, y, width, 22))
                 self.terms_chip_view.addSubview_(chip)
                 x += width + 8
 
-            height = max(58, y + 26)
+            height = max(58, y + 24)
             self.terms_chip_view.setFrameSize_(
                 Foundation.NSMakeSize(414, height)
             )
