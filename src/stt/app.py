@@ -479,7 +479,7 @@ def run() -> None:
         @objc.python_method
         def _build_general_view(self) -> None:
             self.status_dot = AppKit.NSView.alloc().initWithFrame_(
-                Foundation.NSMakeRect(27, 152, 8, 8)
+                Foundation.NSMakeRect(27, 154, 8, 8)
             )
             self.status_dot.setWantsLayer_(True)
             self.status_dot.layer().setCornerRadius_(4)
