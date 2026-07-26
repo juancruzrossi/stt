@@ -6,7 +6,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def test_unix_installer_has_no_remote_execution_or_self_update() -> None:
-    installer = (ROOT / "install.sh").read_text(encoding="utf-8")
+    installer = (ROOT / "cli-install.sh").read_text(encoding="utf-8")
 
     assert "curl" not in installer
     assert "git pull" not in installer
@@ -14,6 +14,8 @@ def test_unix_installer_has_no_remote_execution_or_self_update() -> None:
     assert "chmod -R" not in installer
     assert "UV_PYTHON_DOWNLOADS=never" in installer
     assert "python -m stt.install_model" in installer
+    assert "build_app.sh" not in installer
+    assert "STT.app" not in installer
 
 
 def test_launchers_use_the_installed_environment_without_uv() -> None:
@@ -21,3 +23,9 @@ def test_launchers_use_the_installed_environment_without_uv() -> None:
 
     assert "uv run" not in unix_launcher
     assert "HF_HUB_OFFLINE=1" in unix_launcher
+
+
+def test_app_build_excludes_development_dependencies() -> None:
+    build_script = (ROOT / "build_app.sh").read_text(encoding="utf-8")
+
+    assert "uv run --isolated --frozen --no-dev --group build" in build_script

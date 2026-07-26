@@ -30,7 +30,7 @@ is_project_dir() {
 
 require_uv() {
   command_exists uv || fail \
-    "uv is required. Install it through your approved package manager, then rerun install.sh."
+    "uv is required. Install it through your approved package manager, then rerun cli-install.sh."
 }
 
 check_platform() {
@@ -42,7 +42,8 @@ resolve_project_dir() {
   dir="$(script_dir || true)"
 
   if [[ -z "$dir" ]] || ! is_project_dir "$dir"; then
-    fail "Run install.sh from a reviewed local STT checkout; remote pipe installs are disabled."
+    fail \
+      "Run cli-install.sh from a reviewed local STT checkout; remote pipe installs are disabled."
   fi
   echo "$dir"
 }
@@ -109,14 +110,14 @@ main() {
 
   cat <<EOF
 
-STT is installed.
+STT CLI is installed:
+
+  $BIN_DIR/stt
 
 Next:
-  1. Grant Microphone, Accessibility, and Input Monitoring permissions to your terminal.
-  2. Restart the terminal.
-  3. Run:
-
-     stt listen
+  1. Grant Microphone, Accessibility, and Input Monitoring permissions
+     to your terminal app.
+  2. Run: stt listen
 
 EOF
 }

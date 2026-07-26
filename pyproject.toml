@@ -16,6 +16,9 @@ dependencies = [
 environments = ["sys_platform == 'darwin'"]
 
 [dependency-groups]
+build = [
+    "py2app>=0.28.10,<0.29",
+]
 dev = [
   "mypy>=2.3.0",
   "pytest>=9.1.1",
@@ -34,5 +37,5 @@ disallow_untyped_defs = true
 warn_return_any = true
 
 [[tool.mypy.overrides]]
-module = ["faster_whisper", "sounddevice"]
+module = ["AppKit", "Foundation", "faster_whisper", "objc", "sounddevice"]
 ignore_missing_imports = true

@@ -25,7 +25,7 @@ def configured_model(model: str) -> str:
         not (path / filename).is_file() for filename in MODEL_FILE_HASHES
     ):
         raise FileNotFoundError(
-            f"Pinned STT model was not found at {path}. Run install.sh again."
+            f"Pinned STT model was not found at {path}. Run cli-install.sh again."
         )
     return str(path)
 

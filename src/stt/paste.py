@@ -16,6 +16,13 @@ TERMINAL_BUNDLE_ID = "com.apple.Terminal"
 V_KEY_CODE = 9
 
 
+def ensure_accessibility_access() -> None:
+    api = _application_services()
+    options = {api.kAXTrustedCheckOptionPrompt: True}
+    if not api.AXIsProcessTrustedWithOptions(options):
+        raise RuntimeError("Accessibility required")
+
+
 def _application_services() -> ModuleType:
     return import_module("ApplicationServices")
 

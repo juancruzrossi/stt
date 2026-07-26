@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import platform
-import queue
 import sys
-import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
@@ -15,25 +13,6 @@ from .cache import faster_whisper_cache_entries, huggingface_hub_cache, human_si
 from .model_config import MODEL_NAME
 
 DEFAULT_LANGUAGE = "auto"
-MIN_SECONDS = 0.35
-
-
-class StatusLine:
-    def __init__(self, message: str) -> None:
-        self.message = message
-        self._enabled = sys.stdout.isatty()
-
-    def __enter__(self) -> None:
-        if not self._enabled:
-            return
-        sys.stdout.write(f"{self.message}\n")
-        sys.stdout.flush()
-
-    def __exit__(self, *_exc_info: object) -> None:
-        if not self._enabled:
-            return
-        sys.stdout.write("\033[F\033[K")
-        sys.stdout.flush()
 
 
 @click.group(name="stt", context_settings={"help_option_names": ["-h", "--help"]})
@@ -200,111 +179,33 @@ def listen(
     verbose: bool,
 ) -> None:
     """Run global hotkey dictation."""
-    from .overlay import ListeningIndicator
+    from .dictation import DictationConfig, DictationSession
 
-    indicator = ListeningIndicator()
-    try:
-        indicator.start()
-        from .audio import MicrophoneRecorder, MicrophoneUnavailableError
-        from .hotkey import DoubleTapCommandListener
-        from .paste import deliver_text, has_focused_editable_field
-        from .terms import load_hotwords
-        from .transcriber import load_model
-
-        recorder = MicrophoneRecorder(on_level=indicator.update_level)
-        with StatusLine("Initializing stt..."):
-            model = load_model(
-                MODEL_NAME,
-                device=device,
-                compute_type=compute_type,
-                local_files_only=True,
+    def on_status(status: str, detail: str | None) -> None:
+        if status == "ready":
+            click.echo(
+                "Ready. Double-tap Command to start; "
+                "double-tap Command again to stop."
             )
-    except Exception as exc:
-        indicator.close()
-        raise click.ClickException(str(exc)) from exc
+        elif status == "error" and detail:
+            click.echo(detail, err=True)
 
-    jobs: queue.Queue[tuple[object, bool] | None] = queue.Queue()
-    processing = threading.Event()
-
-    click.echo("Ready. Double-tap Command to start; double-tap Command again to stop.")
-
-    def on_start() -> None:
-        if recorder.is_recording or processing.is_set():
-            return
-        recorder.start()
-        indicator.show()
-
-    def on_stop() -> None:
-        waveform, duration = recorder.stop()
-        if duration < MIN_SECONDS or waveform.size == 0:
-            indicator.hide()
-            return
-        processing.set()
-        indicator.show_processing()
-        input_was_focused = has_focused_editable_field()
-        jobs.put((waveform, input_was_focused))
-
-    def on_toggle() -> None:
-        try:
-            if recorder.is_recording:
-                on_stop()
-            else:
-                on_start()
-        except MicrophoneUnavailableError:
-            indicator.hide()
-            click.echo("Microphone unavailable. Try again.", err=True)
-
-    def worker() -> None:
-        while True:
-            item = jobs.get()
-            if item is None:
-                return
-
-            waveform, input_was_focused = item
-            try:
-                segments, _info = model.transcribe(
-                    waveform,
-                    language=normalize_language(language),
-                    task=task,
-                    beam_size=5,
-                    vad_filter=True,
-                    vad_parameters={"min_silence_duration_ms": 350},
-                    condition_on_previous_text=False,
-                    hotwords=load_hotwords(),
-                )
-                text = " ".join(
-                    segment.text.strip() for segment in segments if segment.text.strip()
-                )
-                if not text:
-                    continue
-
-                deliver_text(
-                    text,
-                    input_was_focused=input_was_focused,
-                    restore_clipboard=not keep_clipboard,
-                )
-                if verbose:
-                    print_verbose_text(text)
-            except Exception as exc:  # noqa: BLE001
-                click.echo(f"Transcription error: {exc}", err=True)
-            finally:
-                indicator.hide()
-                processing.clear()
-
-    thread = threading.Thread(target=worker, daemon=True)
-    thread.start()
-    listener = DoubleTapCommandListener(
-        on_toggle=on_toggle,
-        max_interval=tap_interval,
+    session = DictationSession(
+        DictationConfig(
+            language=normalize_language(language),
+            task=task,
+            device=device,
+            compute_type=compute_type,
+            tap_interval=tap_interval,
+            restore_clipboard=not keep_clipboard,
+        ),
+        on_status=on_status,
+        on_text=print_verbose_text if verbose else None,
     )
     try:
-        listener.run()
-    finally:
-        listener.stop()
-        recorder.close()
-        indicator.close()
-        jobs.put(None)
-        thread.join(timeout=2)
+        session.run()
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 def normalize_language(language: str) -> str | None:
