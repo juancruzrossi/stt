@@ -101,20 +101,34 @@ install_app() {
   local project_dir="$1"
   local source_app="$project_dir/dist/STT.app"
   local destination="$APP_DIR/STT.app"
+  local bundle_id="com.juancruzrossi.stt"
+  local old_requirement=""
+  local new_requirement
 
   log "Building STT.app for $(uname -m)"
   "$project_dir/build_app.sh"
   [[ -d "$source_app" ]] || fail "STT.app build did not produce an application."
+  new_requirement="$(
+    /usr/bin/codesign -d -r- "$source_app" 2>&1 |
+      /usr/bin/tail -n 1
+  )"
 
   [[ -n "$APP_DIR" && "$APP_DIR" != "/" ]] || fail "Invalid app directory."
   mkdir -p "$APP_DIR"
   if [[ -e "$destination" || -L "$destination" ]]; then
     [[ -d "$destination" && -f "$destination/Contents/Info.plist" ]] || \
       fail "Refusing to replace a non-application path: $destination"
+    old_requirement="$(
+      /usr/bin/codesign -d -r- "$destination" 2>&1 |
+        /usr/bin/tail -n 1
+    )"
     rm -rf -- "$destination"
   fi
   /usr/bin/ditto "$source_app" "$destination"
   /usr/bin/codesign --verify --deep --strict "$destination"
+  if [[ -n "$old_requirement" && "$old_requirement" != "$new_requirement" ]]; then
+    /usr/bin/tccutil reset Accessibility "$bundle_id" >/dev/null
+  fi
   echo "Installed: $destination"
 }
 
