@@ -841,6 +841,9 @@ def run() -> None:
             )
             permission_panes = {
                 "Accessibility required": "Privacy_Accessibility",
+                "Global hotkey unavailable. Enable Accessibility.": (
+                    "Privacy_Accessibility"
+                ),
             }
             self.needs_permission_retry = (
                 status == "error" and detail in permission_panes

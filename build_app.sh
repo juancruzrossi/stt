@@ -134,7 +134,7 @@ fi
 mkdir -p -- "$BUILD_DIR" "$DIST_DIR"
 
 cd "$ROOT_DIR/app"
-uv run --frozen --no-sync --group build \
+uv run --isolated --frozen --no-dev --group build \
   python setup.py py2app \
   --bdist-base "$BUILD_DIR" \
   --dist-dir "$DIST_DIR"

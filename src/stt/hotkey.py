@@ -59,6 +59,7 @@ class GlobalHotkeyListener:
         self._pending_key_events: list[Any] = []
         self._pending_key_timer: threading.Timer | None = None
         self._suppress_key_up = False
+        self._suppress_combination_key_up = False
         self._actions: queue.Queue[Callable[[], None] | None] = queue.Queue()
         self._defer_actions = False
 
@@ -75,9 +76,9 @@ class GlobalHotkeyListener:
             | api.CGEventMaskBit(api.kCGEventKeyUp)
         )
         tap_option = (
-            api.kCGEventTapOptionDefault
-            if self.hotkey.kind == ShortcutKind.DOUBLE_KEY
-            else api.kCGEventTapOptionListenOnly
+            api.kCGEventTapOptionListenOnly
+            if self.hotkey.kind == ShortcutKind.DOUBLE_MODIFIER
+            else api.kCGEventTapOptionDefault
         )
         event_tap = api.CGEventTapCreate(
             api.kCGSessionEventTap,
@@ -172,6 +173,14 @@ class GlobalHotkeyListener:
                 event=event,
                 api=api,
             )
+        if self.hotkey.kind == ShortcutKind.KEY_COMBINATION:
+            return self._intercept_key_combination(
+                event_type=event_type,
+                key_code=key_code,
+                flags=flags,
+                is_repeat=is_repeat,
+                event=event,
+            )
 
         self.handle_event(
             event_type=event_type,
@@ -179,6 +188,45 @@ class GlobalHotkeyListener:
             flags=flags,
             is_repeat=is_repeat,
         )
+        return event
+
+    def _intercept_key_combination(
+        self,
+        *,
+        event_type: int,
+        key_code: int,
+        flags: int,
+        is_repeat: bool,
+        event: Any,
+    ) -> Any | None:
+        hotkey = self.hotkey
+        is_target = hotkey.key_code == key_code
+        has_exact_modifiers = flags & MODIFIER_MASK == hotkey.modifiers
+
+        if event_type == KEY_DOWN and is_target and has_exact_modifiers:
+            self._suppress_combination_key_up = True
+            self.handle_event(
+                event_type=event_type,
+                key_code=key_code,
+                flags=flags,
+                is_repeat=is_repeat,
+            )
+            return None
+
+        if (
+            event_type == KEY_UP
+            and is_target
+            and self._suppress_combination_key_up
+        ):
+            self._suppress_combination_key_up = False
+            self.handle_event(
+                event_type=event_type,
+                key_code=key_code,
+                flags=flags,
+                is_repeat=is_repeat,
+            )
+            return None
+
         return event
 
     def _intercept_double_key(

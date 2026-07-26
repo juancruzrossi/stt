@@ -243,27 +243,97 @@ def test_custom_toggle_ignores_repeated_keydown() -> None:
     assert toggles == [None]
 
 
+def test_key_combination_is_suppressed() -> None:
+    toggles: list[None] = []
+    listener = hotkey.GlobalHotkeyListener(
+        AppSettings(
+            toggle_hotkey=HotkeyBinding.key_combination(11, CONTROL)
+        ),
+        on_toggle=lambda: toggles.append(None),
+        on_start=lambda: None,
+        on_stop=lambda: None,
+    )
+    key_down = object()
+    key_up = object()
+
+    assert (
+        listener._intercept_key_combination(
+            event_type=hotkey.KEY_DOWN,
+            key_code=11,
+            flags=CONTROL,
+            is_repeat=False,
+            event=key_down,
+        )
+        is None
+    )
+    assert (
+        listener._intercept_key_combination(
+            event_type=hotkey.KEY_UP,
+            key_code=11,
+            flags=0,
+            is_repeat=False,
+            event=key_up,
+        )
+        is None
+    )
+
+    assert toggles == [None]
+
+
+def test_unmatched_key_combination_is_not_suppressed() -> None:
+    listener = hotkey.GlobalHotkeyListener(
+        AppSettings(
+            toggle_hotkey=HotkeyBinding.key_combination(11, CONTROL)
+        ),
+        on_toggle=lambda: None,
+        on_start=lambda: None,
+        on_stop=lambda: None,
+    )
+    event = object()
+
+    assert (
+        listener._intercept_key_combination(
+            event_type=hotkey.KEY_DOWN,
+            key_code=11,
+            flags=OPTION,
+            is_repeat=False,
+            event=event,
+        )
+        is event
+    )
+
+
 def test_hold_shortcut_starts_and_stops() -> None:
     states: list[str] = []
     listener = hotkey.GlobalHotkeyListener(
         AppSettings(
             activation_mode=ActivationMode.HOLD,
-            hold_hotkey=HotkeyBinding.key_combination(49, OPTION),
+            hold_hotkey=HotkeyBinding.key_combination(35, 0),
         ),
         on_toggle=lambda: None,
         on_start=lambda: states.append("start"),
         on_stop=lambda: states.append("stop"),
     )
 
-    listener.handle_event(
-        event_type=hotkey.KEY_DOWN,
-        key_code=49,
-        flags=OPTION,
+    assert (
+        listener._intercept_key_combination(
+            event_type=hotkey.KEY_DOWN,
+            key_code=35,
+            flags=0,
+            is_repeat=False,
+            event=object(),
+        )
+        is None
     )
-    listener.handle_event(
-        event_type=hotkey.KEY_UP,
-        key_code=49,
-        flags=0,
+    assert (
+        listener._intercept_key_combination(
+            event_type=hotkey.KEY_UP,
+            key_code=35,
+            flags=0,
+            is_repeat=False,
+            event=object(),
+        )
+        is None
     )
 
     assert states == ["start", "stop"]

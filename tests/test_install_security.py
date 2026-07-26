@@ -23,3 +23,9 @@ def test_launchers_use_the_installed_environment_without_uv() -> None:
 
     assert "uv run" not in unix_launcher
     assert "HF_HUB_OFFLINE=1" in unix_launcher
+
+
+def test_app_build_excludes_development_dependencies() -> None:
+    build_script = (ROOT / "build_app.sh").read_text(encoding="utf-8")
+
+    assert "uv run --isolated --frozen --no-dev --group build" in build_script
