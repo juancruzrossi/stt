@@ -540,7 +540,23 @@ def run() -> None:
                 AppKit.NSButton.alloc()
                 .initWithFrame_(Foundation.NSMakeRect(400, 88, 28, 28))
             )
-            self.shortcut_cancel_button.setTitle_("×")
+            symbol_configuration = (
+                AppKit.NSImageSymbolConfiguration
+                .configurationWithPointSize_weight_(
+                    12,
+                    AppKit.NSFontWeightMedium,
+                )
+            )
+            cancel_image = (
+                AppKit.NSImage
+                .imageWithSystemSymbolName_accessibilityDescription_(
+                    "xmark",
+                    "Cancel",
+                )
+                .imageWithSymbolConfiguration_(symbol_configuration)
+            )
+            self.shortcut_cancel_button.setImage_(cancel_image)
+            self.shortcut_cancel_button.setImagePosition_(AppKit.NSImageOnly)
             self.shortcut_cancel_button.setToolTip_("Cancel")
             self.shortcut_cancel_button.setBezelStyle_(
                 AppKit.NSBezelStyleCircular
@@ -554,7 +570,16 @@ def run() -> None:
                 AppKit.NSButton.alloc()
                 .initWithFrame_(Foundation.NSMakeRect(432, 88, 28, 28))
             )
-            self.shortcut_confirm_button.setTitle_("✓")
+            confirm_image = (
+                AppKit.NSImage
+                .imageWithSystemSymbolName_accessibilityDescription_(
+                    "checkmark",
+                    "Save shortcut",
+                )
+                .imageWithSymbolConfiguration_(symbol_configuration)
+            )
+            self.shortcut_confirm_button.setImage_(confirm_image)
+            self.shortcut_confirm_button.setImagePosition_(AppKit.NSImageOnly)
             self.shortcut_confirm_button.setToolTip_("Save shortcut")
             self.shortcut_confirm_button.setBezelStyle_(AppKit.NSBezelStyleCircular)
             self.shortcut_confirm_button.setTarget_(self)
