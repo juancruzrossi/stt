@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from pathlib import Path
 
@@ -170,19 +170,22 @@ class HotkeyBinding:
 @dataclass(frozen=True)
 class AppSettings:
     activation_mode: ActivationMode = ActivationMode.TOGGLE
-    hotkey: HotkeyBinding = HotkeyBinding()
+    toggle_hotkey: HotkeyBinding | None = None
+    hold_hotkey: HotkeyBinding | None = None
 
-    def normalized(self) -> AppSettings:
-        if (
-            self.activation_mode == ActivationMode.HOLD
-            and self.hotkey.kind
-            in {ShortcutKind.DOUBLE_MODIFIER, ShortcutKind.DOUBLE_KEY}
-        ):
-            return AppSettings(
-                activation_mode=ActivationMode.HOLD,
-                hotkey=HotkeyBinding.key_combination(49, OPTION),
-            )
-        return self
+    @property
+    def hotkey(self) -> HotkeyBinding | None:
+        if self.activation_mode == ActivationMode.TOGGLE:
+            return self.toggle_hotkey
+        return self.hold_hotkey
+
+    def with_hotkey(self, hotkey: HotkeyBinding) -> AppSettings:
+        if self.activation_mode == ActivationMode.TOGGLE:
+            return replace(self, toggle_hotkey=hotkey)
+        return replace(self, hold_hotkey=hotkey)
+
+    def with_activation_mode(self, mode: ActivationMode) -> AppSettings:
+        return replace(self, activation_mode=mode)
 
 
 def settings_path() -> Path:
@@ -193,45 +196,34 @@ def load_settings(path: Path | None = None) -> AppSettings:
     source = path or settings_path()
     try:
         payload = json.loads(source.read_text(encoding="utf-8"))
-        hotkey_payload = payload["hotkey"]
-        kind_value = hotkey_payload["kind"]
-        if kind_value == "double_command":
-            hotkey = HotkeyBinding()
-        else:
-            kind = ShortcutKind(kind_value)
-            if kind == ShortcutKind.DOUBLE_MODIFIER:
-                hotkey = HotkeyBinding.double_modifier(
-                    int(hotkey_payload.get("modifiers", 0))
-                )
-            elif kind == ShortcutKind.DOUBLE_KEY:
-                key_code = hotkey_payload.get("key_code")
-                if key_code is None:
-                    raise ValueError("Missing double-tap key")
-                hotkey = HotkeyBinding.double_key(int(key_code))
+        mode = ActivationMode(payload["activation_mode"])
+        toggle_hotkey = _load_hotkey(payload.get("toggle_hotkey"))
+        hold_hotkey = _load_hotkey(payload.get("hold_hotkey"))
+        legacy_hotkey = _load_hotkey(payload.get("hotkey"))
+        if legacy_hotkey is not None:
+            if mode == ActivationMode.TOGGLE:
+                toggle_hotkey = legacy_hotkey
             else:
-                key_code = hotkey_payload.get("key_code")
-                if key_code is None:
-                    raise ValueError("Missing shortcut key")
-                hotkey = HotkeyBinding.key_combination(
-                    int(key_code),
-                    int(hotkey_payload.get("modifiers", 0)),
-                )
-        settings = AppSettings(
-            activation_mode=ActivationMode(payload["activation_mode"]),
-            hotkey=hotkey,
+                hold_hotkey = legacy_hotkey
+        return AppSettings(
+            activation_mode=mode,
+            toggle_hotkey=toggle_hotkey,
+            hold_hotkey=hold_hotkey,
         )
     except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError):
         return AppSettings()
-    return settings.normalized()
 
 
 def save_settings(settings: AppSettings, path: Path | None = None) -> None:
     destination = path or settings_path()
     destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    normalized = settings.normalized()
-    payload = asdict(normalized)
-    payload["activation_mode"] = normalized.activation_mode.value
-    payload["hotkey"]["kind"] = normalized.hotkey.kind.value
+    payload: dict[str, object] = {
+        "activation_mode": settings.activation_mode.value,
+    }
+    if settings.toggle_hotkey is not None:
+        payload["toggle_hotkey"] = _dump_hotkey(settings.toggle_hotkey)
+    if settings.hold_hotkey is not None:
+        payload["hold_hotkey"] = _dump_hotkey(settings.hold_hotkey)
 
     file_descriptor, temporary_name = tempfile.mkstemp(
         dir=destination.parent,
@@ -248,3 +240,36 @@ def save_settings(settings: AppSettings, path: Path | None = None) -> None:
         temporary.replace(destination)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def _load_hotkey(payload: object) -> HotkeyBinding | None:
+    if payload is None:
+        return None
+    if not isinstance(payload, dict):
+        raise TypeError("Invalid shortcut")
+
+    kind_value = payload["kind"]
+    if kind_value == "double_command":
+        return HotkeyBinding.double_modifier(COMMAND)
+
+    kind = ShortcutKind(kind_value)
+    if kind == ShortcutKind.DOUBLE_MODIFIER:
+        return HotkeyBinding.double_modifier(int(payload.get("modifiers", 0)))
+
+    key_code = payload.get("key_code")
+    if key_code is None:
+        raise ValueError("Missing shortcut key")
+    if kind == ShortcutKind.DOUBLE_KEY:
+        return HotkeyBinding.double_key(int(key_code))
+    return HotkeyBinding.key_combination(
+        int(key_code),
+        int(payload.get("modifiers", 0)),
+    )
+
+
+def _dump_hotkey(hotkey: HotkeyBinding) -> dict[str, int | str | None]:
+    return {
+        "kind": hotkey.kind.value,
+        "key_code": hotkey.key_code,
+        "modifiers": hotkey.modifiers,
+    }

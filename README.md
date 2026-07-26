@@ -25,12 +25,9 @@ asks.
 
 ## Use
 
-Double-tap `Command` to start listening. Double-tap it again to transcribe.
-
 Open **Settings** from the Dock or menu bar to:
 
-- Change the shortcut.
-- Choose **Toggle** or **Hold to Talk**.
+- Set separate shortcuts for **Toggle** and **Hold to Talk**.
 - Add custom words under **Terms**.
 
 Audio and transcripts stay on the Mac during normal use. The model and locked

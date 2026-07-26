@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import stat
 from pathlib import Path
 
@@ -20,7 +21,8 @@ def test_settings_round_trip(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
     expected = AppSettings(
         activation_mode=ActivationMode.HOLD,
-        hotkey=HotkeyBinding.key_combination(49, OPTION),
+        toggle_hotkey=HotkeyBinding.double_modifier(COMMAND),
+        hold_hotkey=HotkeyBinding.key_combination(49, OPTION),
     )
 
     save_settings(expected, path)
@@ -29,11 +31,24 @@ def test_settings_round_trip(tmp_path: Path) -> None:
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
 
 
-def test_hold_mode_gets_usable_default_shortcut() -> None:
-    settings = AppSettings(activation_mode=ActivationMode.HOLD).normalized()
+def test_shortcuts_are_unset_and_independent_by_default(tmp_path: Path) -> None:
+    settings = AppSettings()
 
+    assert settings.hotkey is None
+    path = tmp_path / "settings.json"
+    save_settings(settings, path)
+    assert json.loads(path.read_text(encoding="utf-8")) == {
+        "activation_mode": "toggle"
+    }
+
+    settings = settings.with_hotkey(HotkeyBinding.double_modifier(COMMAND))
+    settings = settings.with_activation_mode(ActivationMode.HOLD)
+    assert settings.hotkey is None
+
+    settings = settings.with_hotkey(HotkeyBinding.key_combination(49, OPTION))
     assert settings.hotkey == HotkeyBinding.key_combination(49, OPTION)
-    assert settings.hotkey.label == "⌥Space"
+    settings = settings.with_activation_mode(ActivationMode.TOGGLE)
+    assert settings.hotkey == HotkeyBinding.double_modifier(COMMAND)
 
 
 def test_double_modifier_labels() -> None:
@@ -46,7 +61,9 @@ def test_double_modifier_labels() -> None:
 
 def test_double_modifier_round_trip(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
-    expected = AppSettings(hotkey=HotkeyBinding.double_modifier(CONTROL))
+    expected = AppSettings(
+        toggle_hotkey=HotkeyBinding.double_modifier(CONTROL)
+    )
 
     save_settings(expected, path)
 
@@ -55,7 +72,7 @@ def test_double_modifier_round_trip(tmp_path: Path) -> None:
 
 def test_double_key_round_trip(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
-    expected = AppSettings(hotkey=HotkeyBinding.double_key(35))
+    expected = AppSettings(toggle_hotkey=HotkeyBinding.double_key(35))
 
     save_settings(expected, path)
 
@@ -72,3 +89,4 @@ def test_legacy_double_command_settings_are_migrated(tmp_path: Path) -> None:
     settings = load_settings(path)
 
     assert settings.hotkey == HotkeyBinding.double_modifier(COMMAND)
+    assert settings.hold_hotkey is None

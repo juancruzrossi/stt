@@ -40,7 +40,11 @@ class GlobalHotkeyListener:
         on_stop: Callable[[], None],
         max_interval: float = 0.45,
     ) -> None:
-        self.settings = settings.normalized()
+        hotkey = settings.hotkey
+        if hotkey is None:
+            raise ValueError("Shortcut not configured")
+        self.settings = settings
+        self.hotkey = hotkey
         self.on_toggle = on_toggle
         self.on_start = on_start
         self.on_stop = on_stop
@@ -72,7 +76,7 @@ class GlobalHotkeyListener:
         )
         tap_option = (
             api.kCGEventTapOptionDefault
-            if self.settings.hotkey.kind == ShortcutKind.DOUBLE_KEY
+            if self.hotkey.kind == ShortcutKind.DOUBLE_KEY
             else api.kCGEventTapOptionListenOnly
         )
         event_tap = api.CGEventTapCreate(
@@ -159,7 +163,7 @@ class GlobalHotkeyListener:
                 api.kCGKeyboardEventAutorepeat,
             )
         )
-        if self.settings.hotkey.kind == ShortcutKind.DOUBLE_KEY:
+        if self.hotkey.kind == ShortcutKind.DOUBLE_KEY:
             return self._intercept_double_key(
                 event_type=event_type,
                 key_code=key_code,
@@ -187,7 +191,7 @@ class GlobalHotkeyListener:
         event: Any,
         api: ModuleType,
     ) -> Any | None:
-        hotkey = self.settings.hotkey
+        hotkey = self.hotkey
         is_target = key_code == hotkey.key_code and not flags & MODIFIER_MASK
 
         if event_type == KEY_UP and is_target:
@@ -279,7 +283,7 @@ class GlobalHotkeyListener:
         flags: int,
         is_repeat: bool = False,
     ) -> None:
-        hotkey = self.settings.hotkey
+        hotkey = self.hotkey
         if hotkey.kind == ShortcutKind.DOUBLE_MODIFIER:
             self._handle_double_modifier(event_type, key_code, flags)
             return
@@ -317,7 +321,7 @@ class GlobalHotkeyListener:
         key_code: int,
         flags: int,
     ) -> None:
-        modifier = self.settings.hotkey.modifiers
+        modifier = self.hotkey.modifiers
         key_modifier = MODIFIER_KEY_CODES.get(key_code)
         other_modifiers = flags & (MODIFIER_MASK & ~modifier)
 
@@ -352,7 +356,7 @@ class GlobalHotkeyListener:
         *,
         is_repeat: bool,
     ) -> None:
-        hotkey = self.settings.hotkey
+        hotkey = self.hotkey
         if (
             event_type != KEY_DOWN
             or is_repeat

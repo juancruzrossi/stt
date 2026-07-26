@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .model_config import MODEL_NAME
-from .settings import AppSettings
+from .settings import AppSettings, HotkeyBinding
 
 MIN_SECONDS = 0.35
 
@@ -17,7 +17,9 @@ TextCallback = Callable[[str], None]
 
 @dataclass(frozen=True)
 class DictationConfig:
-    settings: AppSettings = field(default_factory=AppSettings)
+    settings: AppSettings = field(
+        default_factory=lambda: AppSettings(toggle_hotkey=HotkeyBinding())
+    )
     language: str | None = None
     task: str = "transcribe"
     device: str = "cpu"

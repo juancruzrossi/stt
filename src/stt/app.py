@@ -14,7 +14,6 @@ from .settings import (
     ActivationMode,
     AppSettings,
     HotkeyBinding,
-    ShortcutKind,
     load_settings,
     save_settings,
 )
@@ -41,6 +40,8 @@ class EngineCoordinator:
         self._manager.start()
 
     def apply(self, settings: AppSettings | None) -> None:
+        if settings is not None and settings.hotkey is None:
+            settings = None
         with self._lock:
             self._settings = settings
         self._changed.set()
@@ -266,16 +267,7 @@ def run() -> None:
         def confirmShortcut_(self, _sender: Any) -> None:
             if self.shortcut_candidate is None:
                 return
-            mode = self.settings.activation_mode
-            if self.shortcut_candidate.kind in {
-                ShortcutKind.DOUBLE_MODIFIER,
-                ShortcutKind.DOUBLE_KEY,
-            }:
-                mode = ActivationMode.TOGGLE
-            self.settings = AppSettings(
-                activation_mode=mode,
-                hotkey=self.shortcut_candidate,
-            )
+            self.settings = self.settings.with_hotkey(self.shortcut_candidate)
             self._finish_capture(save=True)
 
         def modeChanged_(self, sender: Any) -> None:
@@ -284,10 +276,7 @@ def run() -> None:
                 if sender.selectedSegment() == 0
                 else ActivationMode.HOLD
             )
-            self.settings = AppSettings(
-                activation_mode=mode,
-                hotkey=self.settings.hotkey,
-            ).normalized()
+            self.settings = self.settings.with_activation_mode(mode)
             self._persist_settings()
 
         def tabChanged_(self, sender: Any) -> None:
@@ -530,7 +519,7 @@ def run() -> None:
                 AppKit.NSButton.alloc()
                 .initWithFrame_(Foundation.NSMakeRect(320, 88, 136, 28))
             )
-            self.shortcut_button.setTitle_(self.settings.hotkey.label)
+            self.shortcut_button.setTitle_(self._shortcut_title())
             self.shortcut_button.setBezelStyle_(AppKit.NSBezelStyleRounded)
             self.shortcut_button.setTarget_(self)
             self.shortcut_button.setAction_("recordShortcut:")
@@ -702,6 +691,8 @@ def run() -> None:
                 event_type = int(event.type())
 
                 if event_type == AppKit.NSEventTypeFlagsChanged:
+                    if self.settings.activation_mode == ActivationMode.HOLD:
+                        return None
                     modifier = MODIFIER_KEY_CODES.get(key_code)
                     if modifier not in DOUBLE_TAP_MODIFIERS:
                         return None
@@ -729,10 +720,15 @@ def run() -> None:
                 if bool(event.isARepeat()):
                     return None
                 if not modifiers:
-                    self._capture_tap(
-                        HotkeyBinding.double_key(key_code),
-                        float(event.timestamp()),
-                    )
+                    if self.settings.activation_mode == ActivationMode.HOLD:
+                        self._show_shortcut_candidate(
+                            HotkeyBinding.key_combination(key_code, 0)
+                        )
+                    else:
+                        self._capture_tap(
+                            HotkeyBinding.double_key(key_code),
+                            float(event.timestamp()),
+                        )
                     return None
 
                 self.capture_chorded_modifiers = modifiers
@@ -789,16 +785,15 @@ def run() -> None:
             if save:
                 self._persist_settings()
             else:
-                self.shortcut_button.setTitle_(self.settings.hotkey.label)
+                self.shortcut_button.setTitle_(self._shortcut_title())
                 self._update_mode_help()
                 if self.engine is not None:
                     self.engine.apply(self.settings)
 
         @objc.python_method
         def _persist_settings(self) -> None:
-            self.settings = self.settings.normalized()
             save_settings(self.settings)
-            self.shortcut_button.setTitle_(self.settings.hotkey.label)
+            self.shortcut_button.setTitle_(self._shortcut_title())
             self.mode_control.setSelectedSegment_(
                 0
                 if self.settings.activation_mode == ActivationMode.TOGGLE
@@ -807,6 +802,11 @@ def run() -> None:
             self._update_mode_help()
             if self.engine is not None:
                 self.engine.apply(self.settings)
+
+        @objc.python_method
+        def _shortcut_title(self) -> str:
+            hotkey = self.settings.hotkey
+            return hotkey.label if hotkey is not None else "Set Shortcut"
 
         @objc.python_method
         def _update_mode_help(self) -> None:
@@ -831,7 +831,7 @@ def run() -> None:
                 "ready": ("Ready", True),
                 "listening": ("Listening…", True),
                 "processing": ("Processing…", False),
-                "paused": ("Shortcut paused", False),
+                "paused": ("Set a shortcut", False),
                 "stopped": ("Stopped", False),
                 "error": (detail or "STT needs attention", False),
             }
