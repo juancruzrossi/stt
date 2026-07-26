@@ -138,7 +138,7 @@ STT is installed in:
 
 Next:
   1. Open STT from your Applications folder.
-  2. Grant Microphone, Accessibility, and Input Monitoring permissions to STT.
+  2. Grant Microphone and Accessibility permissions to STT.
   3. Choose your shortcut and activation mode in Settings.
 
 EOF

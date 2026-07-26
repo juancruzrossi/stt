@@ -13,6 +13,31 @@ from stt.settings import (
 )
 
 
+def test_global_hotkey_requires_accessibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeApplicationServices:
+        @staticmethod
+        def AXIsProcessTrusted() -> bool:
+            return False
+
+    listener = hotkey.GlobalHotkeyListener(
+        AppSettings(),
+        on_toggle=lambda: None,
+        on_start=lambda: None,
+        on_stop=lambda: None,
+    )
+    monkeypatch.setattr(
+        hotkey,
+        "_application_services",
+        lambda: FakeApplicationServices,
+    )
+    monkeypatch.setattr(hotkey, "_core_foundation", object)
+
+    with pytest.raises(RuntimeError, match="Accessibility required"):
+        listener.run()
+
+
 def test_double_command_release_toggles_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

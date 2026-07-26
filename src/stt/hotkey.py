@@ -30,13 +30,6 @@ def _core_foundation() -> ModuleType:
     return import_module("CoreFoundation")
 
 
-def ensure_listen_event_access() -> None:
-    api = _application_services()
-    if not api.CGPreflightListenEventAccess():
-        api.CGRequestListenEventAccess()
-        raise RuntimeError("Input Monitoring required")
-
-
 class GlobalHotkeyListener:
     def __init__(
         self,
@@ -69,11 +62,7 @@ class GlobalHotkeyListener:
         self._stopped.clear()
         api = _application_services()
         core = _core_foundation()
-        ensure_listen_event_access()
-        if (
-            self.settings.hotkey.kind == ShortcutKind.DOUBLE_KEY
-            and not api.AXIsProcessTrusted()
-        ):
+        if not api.AXIsProcessTrusted():
             raise RuntimeError("Accessibility required")
 
         event_mask = (
@@ -95,9 +84,7 @@ class GlobalHotkeyListener:
             None,
         )
         if event_tap is None:
-            raise RuntimeError(
-                "Global hotkey unavailable. Enable Input Monitoring and Accessibility."
-            )
+            raise RuntimeError("Global hotkey unavailable. Enable Accessibility.")
 
         source = core.CFMachPortCreateRunLoopSource(None, event_tap, 0)
         run_loop = core.CFRunLoopGetCurrent()

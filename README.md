@@ -20,7 +20,7 @@ cd stt
 ./install.sh
 ```
 
-Open STT and allow Microphone, Accessibility, and Input Monitoring when macOS
+Open STT and allow Microphone and Accessibility when macOS
 asks.
 
 ## Use

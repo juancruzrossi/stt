@@ -33,7 +33,7 @@ Hugging Face offline mode and telemetry disabled.
 
 ## Permissions
 
-Global hotkeys and automatic paste require Accessibility and Input Monitoring;
+Global hotkeys and automatic paste require Accessibility;
 recording requires Microphone access. Grant these permissions to STT. If the
 optional CLI is used, its permissions belong to the terminal application
 instead.

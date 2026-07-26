@@ -186,7 +186,7 @@ def run() -> None:
         event_monitor: Any = None
         is_capturing = False
         needs_permission_retry = False
-        permission_pane = "Privacy_ListenEvent"
+        permission_pane = "Privacy_Accessibility"
 
         def applicationDidFinishLaunching_(self, _notification: Any) -> None:
             self.settings = load_settings()
@@ -815,7 +815,6 @@ def run() -> None:
                 ("Working…", False),
             )
             permission_panes = {
-                "Input Monitoring required": "Privacy_ListenEvent",
                 "Accessibility required": "Privacy_Accessibility",
             }
             self.needs_permission_retry = (

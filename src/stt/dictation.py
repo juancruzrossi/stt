@@ -47,7 +47,7 @@ class DictationSession:
 
     def run(self) -> None:
         from .audio import MicrophoneRecorder
-        from .hotkey import GlobalHotkeyListener, ensure_listen_event_access
+        from .hotkey import GlobalHotkeyListener
         from .overlay import ListeningIndicator
         from .paste import ensure_accessibility_access
         from .transcriber import load_model
@@ -58,7 +58,6 @@ class DictationSession:
         self._indicator = indicator
         self._recorder = recorder
         try:
-            ensure_listen_event_access()
             ensure_accessibility_access()
             indicator.start()
             model = load_model(
