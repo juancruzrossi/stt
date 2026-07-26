@@ -7,13 +7,13 @@ a local Faster Whisper model, briefly places the result on the clipboard, and
 pastes it into the focused application. Audio and transcripts are not sent to a
 remote transcription service.
 
-The installer requires network access for locked Python packages and the pinned
-model revision. The installed application bundles those files and runs with
-Hugging Face offline mode and telemetry disabled.
+The release application bundles its dependencies and model. The CLI installer
+downloads the locked Python packages and pinned model revision. Both run with
+Hugging Face offline mode and telemetry disabled after installation.
 
 ## Installation
 
-- Review and clone a specific commit before running `install.sh`.
+- Review and clone a specific commit before running `cli-install.sh`.
 - Install `uv` and Python 3.12 through an approved package manager. The
   installer does not bootstrap tools or use `sudo`.
 - Python packages are resolved from `uv.lock`; the model revision and required

@@ -123,7 +123,7 @@ trap cleanup EXIT
 
 [[ "$(uname -s)" == "Darwin" ]] || fail "STT supports macOS only."
 command -v uv >/dev/null 2>&1 || fail "uv is required to build STT."
-[[ -f "$MODEL_PATH/model.bin" ]] || fail "Run ./install.sh to download the model."
+[[ -f "$MODEL_PATH/model.bin" ]] || fail "Bundled model is missing."
 
 if [[ -e "$BUILD_DIR" ]]; then
   rm -rf -- "$BUILD_DIR"

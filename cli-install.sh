@@ -3,7 +3,6 @@ set -Eeuo pipefail
 umask 077
 
 BIN_DIR="${STT_BIN_DIR:-$HOME/.local/bin}"
-APP_DIR="${STT_APP_DIR:-$HOME/Applications}"
 
 log() {
   printf '\n==> %s\n' "$1"
@@ -31,7 +30,7 @@ is_project_dir() {
 
 require_uv() {
   command_exists uv || fail \
-    "uv is required. Install it through your approved package manager, then rerun install.sh."
+    "uv is required. Install it through your approved package manager, then rerun cli-install.sh."
 }
 
 check_platform() {
@@ -43,7 +42,8 @@ resolve_project_dir() {
   dir="$(script_dir || true)"
 
   if [[ -z "$dir" ]] || ! is_project_dir "$dir"; then
-    fail "Run install.sh from a reviewed local STT checkout; remote pipe installs are disabled."
+    fail \
+      "Run cli-install.sh from a reviewed local STT checkout; remote pipe installs are disabled."
   fi
   echo "$dir"
 }
@@ -63,7 +63,7 @@ sync_python_environment() {
   export DO_NOT_TRACK=1
   uv python find 3.12 >/dev/null 2>&1 || fail \
     "Python 3.12 is required. Install it through your approved package manager."
-  uv sync --locked --python 3.12 --no-dev --group build
+  uv sync --locked --python 3.12 --no-dev
 }
 
 download_model() {
@@ -97,41 +97,6 @@ install_launcher() {
   fi
 }
 
-install_app() {
-  local project_dir="$1"
-  local source_app="$project_dir/dist/STT.app"
-  local destination="$APP_DIR/STT.app"
-  local bundle_id="com.juancruzrossi.stt"
-  local old_requirement=""
-  local new_requirement
-
-  log "Building STT.app for $(uname -m)"
-  "$project_dir/build_app.sh"
-  [[ -d "$source_app" ]] || fail "STT.app build did not produce an application."
-  new_requirement="$(
-    /usr/bin/codesign -d -r- "$source_app" 2>&1 |
-      /usr/bin/tail -n 1
-  )"
-
-  [[ -n "$APP_DIR" && "$APP_DIR" != "/" ]] || fail "Invalid app directory."
-  mkdir -p "$APP_DIR"
-  if [[ -e "$destination" || -L "$destination" ]]; then
-    [[ -d "$destination" && -f "$destination/Contents/Info.plist" ]] || \
-      fail "Refusing to replace a non-application path: $destination"
-    old_requirement="$(
-      /usr/bin/codesign -d -r- "$destination" 2>&1 |
-        /usr/bin/tail -n 1
-    )"
-    rm -rf -- "$destination"
-  fi
-  /usr/bin/ditto "$source_app" "$destination"
-  /usr/bin/codesign --verify --deep --strict "$destination"
-  if [[ -n "$old_requirement" && "$old_requirement" != "$new_requirement" ]]; then
-    /usr/bin/tccutil reset Accessibility "$bundle_id" >/dev/null
-  fi
-  echo "Installed: $destination"
-}
-
 main() {
   require_uv
   check_platform
@@ -142,18 +107,17 @@ main() {
   sync_python_environment "$project_dir"
   download_model "$project_dir"
   install_launcher "$project_dir"
-  install_app "$project_dir"
 
   cat <<EOF
 
-STT is installed in:
+STT CLI is installed:
 
-  $APP_DIR/STT.app
+  $BIN_DIR/stt
 
 Next:
-  1. Open STT from your Applications folder.
-  2. Grant Microphone and Accessibility permissions to STT.
-  3. Choose your shortcut and activation mode in Settings.
+  1. Grant Microphone, Accessibility, and Input Monitoring permissions
+     to your terminal app.
+  2. Run: stt listen
 
 EOF
 }
