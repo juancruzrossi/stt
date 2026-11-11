@@ -451,5 +451,14 @@ def _run_macos_overlay() -> None:
     window.orderOut_(None)
 
 
+def main() -> None:
+    if sys.platform.startswith("linux"):
+        from .linux_overlay import run_linux_overlay
+
+        run_linux_overlay()
+    else:
+        _run_macos_overlay()
+
+
 if __name__ == "__main__":
-    _run_macos_overlay()
+    main()

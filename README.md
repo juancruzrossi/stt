@@ -1,4 +1,4 @@
-# STT for macOS
+# STT for macOS and Linux
 
 Simple, fast, local speech-to-text dictation with Faster Whisper.
 
@@ -22,16 +22,23 @@ System Settings > Privacy & Security > Input Monitoring
 
 Reload terminal.
 
+On Linux (X11), no extra permissions are needed. `arecord` (alsa-utils) must be
+installed.
+
 ## Usage
 
 ```bash
 stt listen
 ```
 
-1. Double-tap `Command` to start recording.
+1. Double-tap `Command` (macOS) or `Ctrl` (Linux) to start recording.
 2. Speak.
 3. Double-tap the same key again to stop.
 4. The transcript is pasted into the focused text field. If none is focused, it remains on the clipboard.
+
+On Linux, the transcript is pasted with `Shift+Insert` (works in terminals and
+GUI apps) and stays on the clipboard. `Ctrl` only counts as a tap when pressed
+alone, so shortcuts like `Ctrl+C` never start a recording.
 
 Print each transcription in the terminal:
 
@@ -88,6 +95,7 @@ https://huggingface.co/Systran/faster-whisper-base
 ## Platform
 
 - macOS Apple Silicon/Intel.
+- Linux x86_64 with an X11 session (GNOME on Xorg, etc.). Wayland is not supported.
 
 ## Troubleshooting
 

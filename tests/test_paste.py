@@ -7,6 +7,11 @@ import pytest
 from stt import paste
 
 
+@pytest.fixture(autouse=True)
+def macos_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(paste, "_is_linux", lambda: False)
+
+
 def configure_paste(
     monkeypatch: pytest.MonkeyPatch, clipboard_reads: list[str]
 ) -> list[str]:

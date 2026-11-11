@@ -41,6 +41,12 @@ the main residual risk of the CLI architecture.
 Review and revoke permissions in System Settings when STT is no longer needed.
 Do not dictate secrets while an untrusted application has clipboard access.
 
+On Linux (X11), there is no permission prompt: any X11 client can observe key
+events and the clipboard. STT inspects key events only to detect a lone Ctrl
+double-tap (keys are never stored or logged), records
+through `arecord` only between the two double-taps, and leaves the transcript on
+the clipboard after pasting (it is not restored).
+
 ## Reporting
 
 Do not include corporate audio, transcripts, logs, credentials, or model files
