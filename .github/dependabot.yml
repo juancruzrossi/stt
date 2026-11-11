@@ -4,6 +4,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Incompatible with faster-whisper 1.2.1; see constraint in pyproject.toml.
+      - dependency-name: av
+        versions: [">=19"]
     allow:
       - dependency-name: "*"
         update-types:
