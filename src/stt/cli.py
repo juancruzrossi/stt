@@ -205,13 +205,13 @@ def listen(
     indicator = ListeningIndicator()
     try:
         indicator.start()
-        from .audio import MicrophoneRecorder, MicrophoneUnavailableError
-        from .hotkey import DoubleTapCommandListener
+        from .audio import MicrophoneUnavailableError, create_recorder
+        from .hotkey import create_hotkey_listener, hotkey_name
         from .paste import deliver_text, has_focused_editable_field
         from .terms import load_hotwords
         from .transcriber import load_model
 
-        recorder = MicrophoneRecorder(on_level=indicator.update_level)
+        recorder = create_recorder(on_level=indicator.update_level)
         with StatusLine("Initializing stt..."):
             model = load_model(
                 MODEL_NAME,
@@ -226,7 +226,8 @@ def listen(
     jobs: queue.Queue[tuple[object, bool] | None] = queue.Queue()
     processing = threading.Event()
 
-    click.echo("Ready. Double-tap Command to start; double-tap Command again to stop.")
+    key = hotkey_name()
+    click.echo(f"Ready. Double-tap {key} to start; double-tap {key} again to stop.")
 
     def on_start() -> None:
         if recorder.is_recording or processing.is_set():
@@ -293,10 +294,7 @@ def listen(
 
     thread = threading.Thread(target=worker, daemon=True)
     thread.start()
-    listener = DoubleTapCommandListener(
-        on_toggle=on_toggle,
-        max_interval=tap_interval,
-    )
+    listener = create_hotkey_listener(on_toggle, max_interval=tap_interval)
     try:
         listener.run()
     finally:

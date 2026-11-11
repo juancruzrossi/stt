@@ -34,7 +34,16 @@ require_uv() {
 }
 
 check_platform() {
-  [[ "$(uname -s)" == "Darwin" ]] || fail "STT supports macOS only."
+  case "$(uname -s)" in
+    Darwin) ;;
+    Linux)
+      command_exists arecord || fail \
+        "arecord is required on Linux. Install the alsa-utils package, then rerun install.sh."
+      [[ "${XDG_SESSION_TYPE:-x11}" != "wayland" ]] || echo \
+        "WARNING: Wayland detected. Global hotkey and paste need an X11 session." >&2
+      ;;
+    *) fail "STT supports macOS and Linux only." ;;
+  esac
 }
 
 resolve_project_dir() {
@@ -106,6 +115,22 @@ main() {
   sync_python_environment "$project_dir"
   download_model "$project_dir"
   install_launcher "$project_dir"
+
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    cat <<EOF
+
+STT is installed.
+
+Next:
+  1. Run:
+
+     stt listen
+
+  2. Double-tap Ctrl, speak, and double-tap Ctrl again.
+
+EOF
+    return
+  fi
 
   cat <<EOF
 

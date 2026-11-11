@@ -13,6 +13,11 @@ class FakePortAudioError(Exception):
     pass
 
 
+@pytest.fixture(autouse=True)
+def macos_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(audio.sys, "platform", "darwin")
+
+
 def test_start_wraps_portaudio_error(monkeypatch: pytest.MonkeyPatch) -> None:
     class BrokenInputStream:
         def __init__(self, **_kwargs: object) -> None:

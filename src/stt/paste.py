@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from importlib import import_module
 from types import ModuleType
@@ -42,12 +43,28 @@ def write_clipboard(text: str) -> None:
     pasteboard.setString_forType_(text, appkit.NSPasteboardTypeString)
 
 
+def _is_linux() -> bool:
+    return sys.platform.startswith("linux")
+
+
+def paste_text_linux(text: str) -> None:
+    """Put text on the X11 clipboard and paste it into the focused window.
+
+    The transcript stays on the clipboard afterwards, so it can be pasted again.
+    """
+    import_module("stt.x11_clipboard").paste_text(text)
+
+
 def deliver_text(
     text: str,
     *,
     input_was_focused: bool,
     restore_clipboard: bool = True,
 ) -> None:
+    if _is_linux():
+        paste_text_linux(text)
+        return
+
     if not input_was_focused:
         write_clipboard(text)
         return
@@ -59,6 +76,8 @@ def deliver_text(
 
 
 def has_focused_editable_field() -> bool:
+    if _is_linux():
+        return True
     try:
         api = _application_services()
         application = _frontmost_application()
