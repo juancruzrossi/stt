@@ -6,7 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "click>=8.1",
   "faster-whisper>=1.2.1,<2",
-  "huggingface-hub>=1.24.0",
+  "huggingface-hub>=2.4.0",
   "numpy>=1.26",
   "pyobjc-framework-applicationservices>=12.1; sys_platform == 'darwin'",
   "python-xlib>=0.33; sys_platform == 'linux'",
@@ -14,6 +14,12 @@ dependencies = [
 ]
 
 [tool.uv]
+constraint-dependencies = [
+  # faster-whisper 1.2.1 passes `metadata_errors` to av.open(), removed in av 19.
+  "av<19",
+  # onnxruntime 1.24+ ships no Intel macOS wheels.
+  "onnxruntime<1.24; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]
 environments = [
   "sys_platform == 'darwin'",
   "sys_platform == 'linux'",
